@@ -1,0 +1,25 @@
+=== Sun Jun  7 04:43:55 PM UTC 2026 ===
+From github.com:shazim-otp/PTM-ERP
+ * branch            main       -> FETCH_HEAD
+Already up to date.
+Requirement already satisfied: flask in ./venv/lib/python3.12/site-packages (from -r requirements.txt (line 1)) (3.1.3)
+Requirement already satisfied: flask-wtf in ./venv/lib/python3.12/site-packages (from -r requirements.txt (line 2)) (1.3.0)
+Requirement already satisfied: bcrypt in ./venv/lib/python3.12/site-packages (from -r requirements.txt (line 3)) (5.0.0)
+Requirement already satisfied: python-dotenv in ./venv/lib/python3.12/site-packages (from -r requirements.txt (line 4)) (1.2.2)
+Requirement already satisfied: reportlab in ./venv/lib/python3.12/site-packages (from -r requirements.txt (line 5)) (4.5.1)
+Requirement already satisfied: requests in ./venv/lib/python3.12/site-packages (from -r requirements.txt (line 6)) (2.34.2)
+Requirement already satisfied: apscheduler in ./venv/lib/python3.12/site-packages (from -r requirements.txt (line 7)) (3.11.2)
+Requirement already satisfied: blinker>=1.9.0 in ./venv/lib/python3.12/site-packages (from flask->-r requirements.txt (line 1)) (1.9.0)
+Requirement already satisfied: click>=8.1.3 in ./venv/lib/python3.12/site-packages (from flask->-r requirements.txt (line 1)) (8.4.1)
+Requirement already satisfied: itsdangerous>=2.2.0 in ./venv/lib/python3.12/site-packages (from flask->-r requirements.txt (line 1)) (2.2.0)
+Requirement already satisfied: jinja2>=3.1.2 in ./venv/lib/python3.12/site-packages (from flask->-r requirements.txt (line 1)) (3.1.6)
+Requirement already satisfied: markupsafe>=2.1.1 in ./venv/lib/python3.12/site-packages (from flask->-r requirements.txt (line 1)) (3.0.3)
+Requirement already satisfied: werkzeug>=3.1.0 in ./venv/lib/python3.12/site-packages (from flask->-r requirements.txt (line 1)) (3.1.8)
+Requirement already satisfied: wtforms in ./venv/lib/python3.12/site-packages (from flask-wtf->-r requirements.txt (line 2)) (3.2.2)
+Requirement already satisfied: pillow>=9.0.0 in ./venv/lib/python3.12/site-packages (from reportlab->-r requirements.txt (line 5)) (12.2.0)
+Requirement already satisfied: charset-normalizer in ./venv/lib/python3.12/site-packages (from reportlab->-r requirements.txt (line 5)) (3.4.7)
+Requirement already satisfied: idna<4,>=2.5 in ./venv/lib/python3.12/site-packages (from requests->-r requirements.txt (line 6)) (3.18)
+Requirement already satisfied: urllib3<3,>=1.26 in ./venv/lib/python3.12/site-packages (from requests->-r requirements.txt (line 6)) (2.7.0)
+Requirement already satisfied: certifi>=2023.5.7 in ./venv/lib/python3.12/site-packages (from requests->-r requirements.txt (line 6)) (2026.5.20)
+Requirement already satisfied: tzlocal>=3.0 in ./venv/lib/python3.12/site-packages (from apscheduler->-r requirements.txt (line 7)) (5.3.1)
+Deployment finished
