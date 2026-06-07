@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login - PTMHSS ERP</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+</head>
+
+<body>
+
+<div class="login-container">
+
+    <div class="login-card">
+
+        {% if is_admin %}
+        <h2>🔐 Admin Login</h2>
+        <p class="subtitle">Access Administrator Dashboard</p>
+        {% else %}
+        <h2>🔐 Teacher Login</h2>
+        <p class="subtitle">Access PTMHSS ERP System</p>
+        {% endif %}
+
+        <form method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            {% if not is_admin %}
+            <div class="input-group">
+                <input name="username" required>
+                <label>Username</label>
+            </div>
+            {% endif %}
+
+            <div class="input-group">
+                <input type="password" name="password" required>
+                <label>Password</label>
+            </div>
+
+            <button class="login-btn">Login</button>
+
+            {% if is_admin %}
+            <div style="text-align: center; margin-top: 15px;">
+                <a href="/login" style="color: #3b82f6; text-decoration: none; font-size: 14px;"><i class="fa-solid fa-chalkboard-user me-1"></i> Are you a Teacher? Login here</a>
+            </div>
+            {% else %}
+            <div style="text-align: center; margin-top: 15px;">
+                <a href="/admin" style="color: #3b82f6; text-decoration: none; font-size: 14px;"><i class="fa-solid fa-lock me-1"></i> Are you an Admin? Login here</a>
+            </div>
+            {% endif %}
+        </form>
+
+    </div>
+
+</div>
+<script>
+    function toggleMenu() {
+        document.querySelector(".sidebar").classList.toggle("hide");
+    }
+
+    // --- FORM ENTER KEY INTERCEPTOR ---
+    // Prevents Enter key from submitting forms prematurely
+    document.addEventListener("keydown", function(event) {
+        if (event.key === "Enter" || event.keyCode === 13) {
+            const target = event.target;
+            const tag = target.tagName;
+            const type = target.type ? target.type.toLowerCase() : "";
+            
+            // Intercept standard input fields and selects
+            const isInterceptable = (tag === "INPUT" && !["submit", "button", "image", "file", "reset"].includes(type)) || (tag === "SELECT");
+            
+            if (isInterceptable) {
+                const form = target.form;
+                if (form) {
+                    // Get list of all currently visible & enabled focusable inputs in this form
+                    const focusables = Array.from(form.querySelectorAll("input, select, textarea, button"))
+                        .filter(el => {
+                            if (el.disabled || el.type === "hidden") return false;
+                            // Check if the element is visible
+                            return el.offsetWidth > 0 || el.offsetHeight > 0 || (el.getClientRects && el.getClientRects().length > 0);
+                        });
+                    
+                    const index = focusables.indexOf(target);
+                    
+                    // Determine if this is the last editable input field in the form
+                    const editables = focusables.filter(el => {
+                        const elTag = el.tagName;
+                        const elType = el.type ? el.type.toLowerCase() : "";
+                        if (elTag === "SELECT" || elTag === "TEXTAREA") return true;
+                        if (elTag === "INPUT") {
+                            return !["submit", "button", "image", "file", "reset"].includes(elType);
+                        }
+                        return false;
+                    });
+                    
+                    const isLastEditable = (editables.indexOf(target) === editables.length - 1);
+                    
+                    if (!isLastEditable) {
+                        // Prevent default browser form submission
+                        event.preventDefault();
+                        
+                        // Shift focus to the next field in the tab order
+                        if (index > -1 && index < focusables.length - 1) {
+                            focusables[index + 1].focus();
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Promotion System - PTMHSS ERP</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom styling -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        .main {
+            padding: 25px;
+            min-height: 100vh;
+        }
+        .student-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            transition: all 0.2s ease;
+        }
+        .student-item:hover {
+            background: rgba(209, 133, 92, 0.08) !important;
+        }
+        .student-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-top: 0;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar Inclusion -->
+    {% include 'sidebar.html' %}
+
+    <div class="main">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+            <div>
+                <h1 class="h2 text-white fw-bold"><i class="fa-solid fa-arrow-up-right-from-square text-success me-2"></i> Student Promotion Console</h1>
+                <p class="text-muted m-0">Bulk promote or move students to their next academic year class and batch</p>
+            </div>
+            <div>
+                <a href="/admin-panel" class="btn btn-outline-light"><i class="fa-solid fa-arrow-left me-2"></i> Back to Manage</a>
+            </div>
+        </div>
+
+        <!-- Alert messages -->
+        {% if error_msg %}
+        <div class="alert alert-danger bg-danger text-white border-0 mb-4">{{ error_msg }}</div>
+        {% endif %}
+        {% if success_msg %}
+        <div class="alert alert-success bg-success text-white border-0 mb-4">{{ success_msg }}</div>
+        {% endif %}
+
+        <!-- Filter Selection Form (GET) -->
+        <div class="card p-4">
+            <h5 class="text-white mb-3 fw-bold"><i class="fa-solid fa-filter text-primary me-2"></i> 1. Select Source Students</h5>
+            <form action="/admin/promotion" method="GET" class="row g-3 align-items-end">
+                <div class="col-12 col-md-4">
+                    <label class="form-label">Source Batch</label>
+                    <select name="batch_id" class="form-select bg-dark text-white border-secondary" required>
+                        <option value="">-- Select Source Batch --</option>
+                        {% for b in batches %}
+                        <option value="{{ b.id }}" {% if selected_batch == b.id|string %}selected{% endif %}>{{ b.batch_name }} {% if b.is_active %}(Active){% endif %}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-md-4">
+                    <label class="form-label">Source Class</label>
+                    <select name="class" class="form-select bg-dark text-white border-secondary" required>
+                        <option value="">-- Select Source Class --</option>
+                        {% for c in classes %}
+                        <option value="{{ c }}" {% if selected_class == c %}selected{% endif %}>{{ c }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-md-4">
+                    <button type="submit" class="btn btn-info w-100 fw-bold"><i class="fa-solid fa-magnifying-glass me-2"></i> Load Students</button>
+                </div>
+            </form>
+        </div>
+
+        {% if selected_class and selected_batch %}
+        <!-- Execution Promotion Form (POST) -->
+        <form action="/admin/promotion" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="row">
+                <!-- Students List to Select -->
+                <div class="col-12 col-lg-7">
+                    <div class="card p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="text-white fw-bold m-0"><i class="fa-solid fa-users text-primary me-2"></i> Students in {{ selected_class }}</h5>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="selectAll" onclick="toggleSelectAll(this)">
+                                <label class="form-check-label text-white fw-semibold" for="selectAll" style="cursor: pointer;">Select All</label>
+                            </div>
+                        </div>
+                        
+                        <div style="max-height: 400px; overflow-y: auto; padding-right: 5px;">
+                            {% if students %}
+                                {% for s in students %}
+                                <div class="student-item d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <input type="checkbox" name="student_ids" value="{{ s.id }}" class="form-check-input student-checkbox">
+                                        <div>
+                                            <span class="text-white fw-semibold">{{ s.name }}</span>
+                                            <div class="small text-muted">Reg No: {{ s.register_no or 'N/A' }} | Stream: {{ s.stream | capitalize }}</div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span class="badge bg-secondary">{{ s.class }}</span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted text-center py-4">No students found matching this class and batch.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Destination Promotion Params -->
+                <div class="col-12 col-lg-5">
+                    <div class="card p-4">
+                        <h5 class="text-white mb-3 fw-bold"><i class="fa-solid fa-angles-right text-success me-2"></i> 2. Select Destination Target</h5>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Target Class</label>
+                            <input type="text" name="target_class" class="form-control text-white" placeholder="e.g. Class 12" required>
+                            <div class="form-text text-muted">Type the new Class name students will be promoted to.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Target Batch (Academic Year)</label>
+                            <select name="target_batch_id" class="form-select bg-dark text-white border-secondary" required>
+                                <option value="">-- Select Target Batch --</option>
+                                {% for b in batches %}
+                                <option value="{{ b.id }}">{{ b.batch_name }} {% if b.is_active %}(Active){% endif %}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text text-muted">Select the batch students will belong to in the next class.</div>
+                        </div>
+
+                        <button type="submit" class="btn btn-success w-100 fw-bold py-2 mt-2" onclick="return confirmPromotion();">
+                            <i class="fa-solid fa-rocket me-2"></i> Execute Promotion
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+        {% endif %}
+    </div>
+
+    <!-- Bootstrap Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function toggleSelectAll(master) {
+            const checkboxes = document.querySelectorAll(".student-checkbox");
+            checkboxes.forEach(cb => {
+                cb.checked = master.checked;
+            });
+        }
+
+        function confirmPromotion() {
+            const checked = document.querySelectorAll(".student-checkbox:checked").length;
+            if (checked === 0) {
+                alert("Please select at least one student to promote.");
+                return false;
+            }
+            return confirm(`Are you sure you want to promote the ${checked} selected student(s)?\n\nThis will update their Class and academic Batch in the database. This action is safe, and student data is preserved.`);
+        }
+    </script>
+</body>
+</html>

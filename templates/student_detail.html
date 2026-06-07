@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Profile - {{ student.name }}</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom styling -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        .main {
+            padding: 25px;
+            background-color: #0f172a;
+            min-height: 100vh;
+        }
+        .profile-card {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            backdrop-filter: blur(12px);
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        .profile-img {
+            width: 140px;
+            height: 140px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 4px solid #3b82f6;
+            margin-bottom: 15px;
+        }
+        .badge-risk {
+            font-size: 0.95rem;
+            padding: 8px 12px;
+            border-radius: 8px;
+        }
+        .bg-risk-low { background-color: #10b981; color: white; }
+        .bg-risk-medium { background-color: #f59e0b; color: white; }
+        .bg-risk-high { background-color: #f97316; color: white; }
+        .bg-risk-critical { background-color: #ef4444; color: white; }
+
+        .section-card {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+        .text-muted-custom {
+            color: #94a3b8 !important;
+        }
+        .table-custom {
+            color: #e2e8f0;
+        }
+        .table-custom th {
+            background-color: #0f172a;
+            border-color: #334155;
+            color: #94a3b8;
+        }
+        .table-custom td {
+            border-color: #334155;
+        }
+        .remark-item {
+            background: rgba(15, 23, 42, 0.5);
+            border-left: 4px solid #3b82f6;
+            padding: 12px 15px;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar Inclusion -->
+    {% include 'sidebar.html' %}
+
+    <div class="main">
+        <!-- Top Navigation / Breadcrumbs -->
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+            <div>
+                <a href="/students" class="btn btn-outline-secondary btn-sm mb-2"><i class="fa-solid fa-arrow-left me-1"></i> Back to Student Directory</a>
+                <h1 class="h2 text-white fw-bold m-0"><i class="fa-solid fa-id-card text-primary me-2"></i> Student Profile</h1>
+            </div>
+            
+            <div class="d-flex gap-2 flex-wrap">
+                <!-- PDF Exports Dropdown -->
+                <div class="dropdown">
+                    <button class="btn btn-primary dropdown-toggle" type="button" id="pdfDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa-solid fa-file-pdf me-1"></i> Export PDF
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="pdfDropdown">
+                        <li><button class="dropdown-menu-item dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#exportPdfModal"><i class="fa-solid fa-address-card me-2"></i> Full Report Card</button></li>
+                        <li><a class="dropdown-menu-item dropdown-item" href="/reports/pdf/attendance/{{ student.id }}"><i class="fa-solid fa-calendar-check me-2"></i> Attendance Log Only</a></li>
+                        <li><a class="dropdown-menu-item dropdown-item" href="/reports/pdf/ai/{{ student.id }}"><i class="fa-solid fa-brain me-2"></i> AI Diagnostic Only</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Quick AI analysis trigger -->
+                <a href="/ai/analyze/{{ student.id }}" class="btn btn-success"><i class="fa-solid fa-wand-magic-sparkles me-1"></i> Run AI Analysis</a>
+
+                <!-- Edit / Delete (Admin Only) -->
+                {% if session.get('admin') %}
+                <a href="/edit/student/{{ student.id }}" class="btn btn-warning"><i class="fa-solid fa-pen-to-square me-1"></i> Edit Profile</a>
+                <a href="/delete/student/{{ student.id }}" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this student?')"><i class="fa-solid fa-trash-can me-1"></i> Delete</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Left Column: Quick Profile Card & Contact Info -->
+            <div class="col-12 col-lg-4">
+                <!-- Profile General Card -->
+                <div class="profile-card text-center">
+                    {% if student.image %}
+                    <img src="{{ url_for('static', filename='uploads/' + student.image) }}" alt="{{ student.name }}" class="profile-img">
+                    {% else %}
+                    <div class="profile-img bg-secondary d-flex align-items-center justify-content-center mx-auto text-white" style="font-size: 3rem;">
+                        <i class="fa-solid fa-user-graduate"></i>
+                    </div>
+                    {% endif %}
+                    <h3 class="text-white fw-bold mb-1">{{ student.name }}</h3>
+                    <p class="text-muted-custom mb-3">Reg No: {{ student.register_no or 'N/A' }} | Class: {{ student.class or 'N/A' }}</p>
+                    
+                    <div class="d-flex justify-content-center mb-3">
+                        {% if ai_report %}
+                            <span class="badge-risk bg-risk-{{ ai_report.risk_level.lower() }}">
+                                <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ ai_report.risk_level }} Risk (Score: {{ ai_report.risk_score }}%)
+                            </span>
+                        {% else %}
+                            <span class="badge bg-secondary badge-risk">
+                                <i class="fa-solid fa-brain me-1"></i> Risk Level: Run AI Analysis
+                            </span>
+                        {% endif %}
+                    </div>
+                    <hr class="border-secondary">
+                    
+                    <div class="text-start">
+                        <p class="small mb-1"><span class="text-muted-custom">Stream:</span> <span class="badge bg-info ms-1">{{ student.stream|capitalize }}</span></p>
+                        <p class="small mb-0"><span class="text-muted-custom">Subject Stream Group:</span> <span class="badge bg-secondary ms-1">{{ student.category|upper }}</span></p>
+                    </div>
+                </div>
+
+                <!-- Contact Details -->
+                <div class="section-card">
+                    <h5 class="text-white mb-3 fw-bold"><i class="fa-solid fa-address-book text-info me-2"></i> Contact Details</h5>
+                    <div class="small">
+                        <div class="mb-2">
+                            <span class="text-muted-custom d-block">Father Name:</span>
+                            <span class="text-white fw-semibold">{{ student.father_name or 'N/A' }}</span>
+                        </div>
+                        <div class="mb-2">
+                            <span class="text-muted-custom d-block">Mother Name:</span>
+                            <span class="text-white fw-semibold">{{ student.mother_name or 'N/A' }}</span>
+                        </div>
+                        <div class="mb-2">
+                            <span class="text-muted-custom d-block">Father Phone:</span>
+                            <span class="text-white fw-semibold"><i class="fa-solid fa-phone text-secondary me-1"></i>{{ student.phone_father or 'N/A' }}</span>
+                        </div>
+                        <div class="mb-2">
+                            <span class="text-muted-custom d-block">Mother Phone:</span>
+                            <span class="text-white fw-semibold"><i class="fa-solid fa-phone text-secondary me-1"></i>{{ student.phone_mother or 'N/A' }}</span>
+                        </div>
+                        <div class="mb-0">
+                            <span class="text-muted-custom d-block">Student Personal Phone:</span>
+                            <span class="text-white fw-semibold">{{ student.phone_student or 'N/A' }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Academic & Personal Details -->
+                <div class="section-card">
+                    <h5 class="text-white mb-3 fw-bold"><i class="fa-solid fa-graduation-cap text-success me-2"></i> Enrollment & Personal Info</h5>
+                    <div class="small">
+                        <div class="mb-2">
+                            <span class="text-muted-custom d-block">Admission Number:</span>
+                            <span class="text-white fw-semibold">{{ student.admission_no or 'N/A' }}</span>
+                        </div>
+                        <div class="mb-2">
+                            <span class="text-muted-custom d-block">Aadhaar Number:</span>
+                            <span class="text-white fw-semibold">{{ student.adhar_no or 'N/A' }}</span>
+                        </div>
+                        <div class="mb-2">
+                            <span class="text-muted-custom d-block">Caste Category (SC/ST/OBC):</span>
+                            <span class="text-white fw-semibold">{{ (student.caste_category or 'N/A')|upper }}</span>
+                        </div>
+                        <div class="mb-2">
+                            <span class="text-muted-custom d-block">Type of Admission:</span>
+                            <span class="text-white fw-semibold">{{ (student.admission_type or 'N/A')|capitalize }}</span>
+                        </div>
+                        <div class="mb-2">
+                            <span class="text-muted-custom d-block">Bank Account:</span>
+                            <span class="text-white fw-semibold">{{ student.bank_acc_no or 'N/A' }}</span>
+                        </div>
+                        <div class="mb-2">
+                            <span class="text-muted-custom d-block">Bank IFSC:</span>
+                            <span class="text-white fw-semibold">{{ student.ifsc_code or 'N/A' }}</span>
+                        </div>
+                        <div class="mb-2">
+                            <span class="text-muted-custom d-block">Co-Curricular Activities:</span>
+                            <span class="text-white fw-semibold">{{ student.co_curricular or 'N/A' }}</span>
+                        </div>
+                        <div class="mb-2">
+                            <span class="text-muted-custom d-block">NSS/Scouts/JRC/Little Kites:</span>
+                            <span class="text-white fw-semibold">{{ (student.nss_scouts_jrc_lk or 'N/A')|upper }}</span>
+                        </div>
+                        <div class="mb-0">
+                            <span class="text-muted-custom d-block">State Level Participation:</span>
+                            <span class="text-white fw-semibold">{{ student.state_level_participation or 'N/A' }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin/Teacher: Actions Panel (Remarks, Attendance & Marks) -->
+                <div class="section-card">
+                    <h5 class="text-white mb-3 fw-bold"><i class="fa-solid fa-sliders text-warning me-2"></i> Teacher Utilities</h5>
+                    
+                    <!-- Write Remark Form -->
+                    <h6 class="text-white mb-2 small"><i class="fa-regular fa-comment-dots text-primary me-1"></i> Add Remark</h6>
+                    <form action="/student/{{ student.id }}/remark" method="post" class="mb-3">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="mb-2">
+                            <textarea name="remark" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Write a comment..." rows="2" required></textarea>
+                        </div>
+                        <button class="btn btn-sm btn-primary w-100"><i class="fa-solid fa-paper-plane me-1"></i> Save Remark</button>
+                    </form>
+                    
+                    <hr class="border-secondary">
+                    
+                    <!-- Attendance quick post -->
+                    <h6 class="text-white mb-2 small"><i class="fa-solid fa-calendar-day text-success me-1"></i> Record Attendance</h6>
+                    <form action="/attendance/mark-single" method="post" class="mb-3">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="student_id" value="{{ student.id }}">
+                        <div class="row g-2">
+                            <div class="col-7">
+                                <input type="date" name="attendance_date" class="form-control form-control-sm bg-dark text-white border-secondary" value="{{ today_date }}" required>
+                            </div>
+                            <div class="col-5">
+                                <select name="status" class="form-select form-select-sm bg-dark text-white border-secondary">
+                                    <option value="Present">Present</option>
+                                    <option value="Absent">Absent</option>
+                                    <option value="Late">Late</option>
+                                    <option value="Leave">Leave</option>
+                                </select>
+                            </div>
+                        </div>
+                        <input type="text" name="remarks" class="form-control form-control-sm bg-dark text-white border-secondary mt-2" placeholder="Optional remarks">
+                        <button class="btn btn-sm btn-success w-100 mt-2"><i class="fa-solid fa-check me-1"></i> Mark Attendance</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Right Column: Graphs, Performance & Remarks Log -->
+            <div class="col-12 col-lg-8">
+                <!-- Attendance Stats Card -->
+                <div class="section-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+                        <h5 class="text-white fw-bold mb-0"><i class="fa-solid fa-calendar-check text-warning me-2"></i> Attendance Record</h5>
+                        <span class="badge bg-secondary fs-6">Overall: {{ attendance.percentage }}%</span>
+                    </div>
+                    
+                    <div class="row align-items-center mb-3">
+                        <div class="col-12 col-md-5">
+                            <div class="d-flex justify-content-around text-center">
+                                <div>
+                                    <h4 class="text-success fw-bold m-0">{{ attendance.present }}</h4>
+                                    <small class="text-muted-custom">Present</small>
+                                </div>
+                                <div>
+                                    <h4 class="text-danger fw-bold m-0">{{ attendance.absent }}</h4>
+                                    <small class="text-muted-custom">Absent</small>
+                                </div>
+                                <div>
+                                    <h4 class="text-warning fw-bold m-0">{{ attendance.late }}</h4>
+                                    <small class="text-muted-custom">Late</small>
+                                </div>
+                                <div>
+                                    <h4 class="text-primary fw-bold m-0">{{ attendance.leave }}</h4>
+                                    <small class="text-muted-custom">Leave</small>
+                                </div>
+                            </div>
+                            
+                            <!-- Low Attendance warnings color coded -->
+                            <div class="mt-3">
+                                {% if attendance.percentage < 60 %}
+                                    <div class="alert alert-danger p-2 small mb-0"><i class="fa-solid fa-circle-exclamation me-1"></i> Attendance critical: Below 60%</div>
+                                {% elif attendance.percentage < 75 %}
+                                    <div class="alert alert-danger p-2 small mb-0"><i class="fa-solid fa-triangle-exclamation me-1"></i> Attendance danger: Below 75%</div>
+                                {% elif attendance.percentage < 80 %}
+                                    <div class="alert alert-warning p-2 small mb-0"><i class="fa-solid fa-triangle-exclamation me-1"></i> Attendance warning: Below 80%</div>
+                                {% elif attendance.percentage < 90 %}
+                                    <div class="alert alert-info p-2 small mb-0"><i class="fa-solid fa-circle-info me-1"></i> Attendance moderate: Below 90%</div>
+                                {% else %}
+                                    <div class="alert alert-success p-2 small mb-0"><i class="fa-solid fa-circle-check me-1"></i> Attendance outstanding: Meets guidelines!</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-12 col-md-7 mt-3 mt-md-0">
+                            <div style="height: 140px;">
+                                <canvas id="chartStudentAttendance"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Marks Table -->
+                <div class="section-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="text-white fw-bold mb-0"><i class="fa-solid fa-chart-bar text-success me-2"></i> Academic Performance (Marks)</h5>
+                        
+                        <!-- Form to record marks -->
+                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#collapseMarksForm">
+                            <i class="fa-solid fa-plus me-1"></i> Enter Marks
+                        </button>
+                    </div>
+                    
+                    <!-- Quick Marks Entry (Collapse) -->
+                    <div class="collapse mb-3 p-3 bg-dark border border-secondary rounded" id="collapseMarksForm">
+                        <form action="/marks/add-single" method="post">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="student_id" value="{{ student.id }}">
+                            <div class="row g-2">
+                                <div class="col-12 col-md-4">
+                                    <label class="small text-muted-custom">Subject</label>
+                                    <select name="subject_id" class="form-select form-select-sm bg-dark text-white border-secondary" required>
+                                        {% for sub in subjects %}
+                                        <option value="{{ sub.id }}">{{ sub.subject_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <label class="small text-muted-custom">Exam</label>
+                                    <select name="exam_id" class="form-select form-select-sm bg-dark text-white border-secondary" required>
+                                        {% for ex in exams %}
+                                        <option value="{{ ex.id }}">{{ ex.exam_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-6 col-md-2">
+                                    <label class="small text-muted-custom">Marks</label>
+                                    <input type="number" step="0.1" name="marks_obtained" class="form-control form-control-sm bg-dark text-white border-secondary" required>
+                                </div>
+                                <div class="col-6 col-md-2">
+                                    <label class="small text-muted-custom">Max Marks</label>
+                                    <input type="number" name="max_marks" class="form-control form-control-sm bg-dark text-white border-secondary" value="100" required>
+                                </div>
+                            </div>
+                            <button class="btn btn-sm btn-primary w-100 mt-3"><i class="fa-solid fa-save me-1"></i> Save Grade Marks</button>
+                        </form>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-dark table-custom table-hover m-0">
+                            <thead>
+                                <tr>
+                                    <th>Exam</th>
+                                    <th>Subject</th>
+                                    <th>Marks Obtained</th>
+                                    <th>Max Marks</th>
+                                    <th>Pct %</th>
+                                    <th>Grade</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if marks %}
+                                    {% for m in marks %}
+                                    <tr>
+                                        <td>{{ m.exam_name }}</td>
+                                        <td>{{ m.subject_name }}</td>
+                                        <td>{{ m.marks_obtained }}</td>
+                                        <td>{{ m.max_marks }}</td>
+                                        <td class="fw-bold">
+                                            {% set pct = (m.marks_obtained / m.max_marks) * 100 %}
+                                            {{ "%.1f"|format(pct) }}%
+                                        </td>
+                                        <td>
+                                            {% if pct >= 90 %}
+                                                <span class="badge bg-success">A+</span>
+                                            {% elif pct >= 80 %}
+                                                <span class="badge bg-success">A</span>
+                                            <!-- Grades: A+, A, B+, B, C, D, F -->
+                                            {% elif pct >= 70 %}
+                                                <span class="badge bg-primary">B+</span>
+                                            {% elif pct >= 60 %}
+                                                <span class="badge bg-info text-dark">B</span>
+                                            {% elif pct >= 50 %}
+                                                <span class="badge bg-warning text-dark">C</span>
+                                            {% elif pct >= 40 %}
+                                                <span class="badge bg-warning text-dark">D</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">F</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <a href="/marks/delete/{{ m.id }}?student_id={{ student.id }}" class="text-danger small" onclick="return confirm('Delete this record?')"><i class="fa-solid fa-trash"></i></a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted-custom">No marks records available.</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- AI Analysis / Diagnostic Card -->
+                <div class="section-card">
+                    <h5 class="text-white mb-3 fw-bold"><i class="fa-solid fa-brain text-info me-2"></i> AI Student Monitoring & Diagnostics</h5>
+                    {% if ai_report %}
+                        <div class="p-3 bg-dark border border-secondary rounded">
+                            <div class="row text-center mb-3 small g-2">
+                                <div class="col-4 border-end border-secondary">
+                                    <span class="text-muted-custom d-block">Performance Score:</span>
+                                    <strong class="text-white">{{ ai_report.performance_score }}%</strong>
+                                </div>
+                                <div class="col-4 border-end border-secondary">
+                                    <span class="text-muted-custom d-block">Weak Subjects:</span>
+                                    <strong class="text-warning">{{ ai_report.weak_subjects or 'None' }}</strong>
+                                </div>
+                                <div class="col-4">
+                                    <span class="text-muted-custom d-block">Risk Level:</span>
+                                    <strong class="text-danger">{{ ai_report.risk_score }}% ({{ ai_report.risk_level }})</strong>
+                                </div>
+                            </div>
+                            
+                            <h6 class="text-white fw-bold mb-2">AI Report Analysis:</h6>
+                            <div class="text-light small" style="white-space: pre-wrap; font-family: sans-serif; line-height: 1.5;">{{ ai_report.report_text | safe }}</div>
+                            
+                            <hr class="border-secondary mt-3">
+                            <h6 class="text-white fw-bold small mb-1">AI Recommendation:</h6>
+                            <p class="text-muted-custom small mb-0">{{ ai_report.recommendations }}</p>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-secondary text-center py-4 mb-0">
+                            <i class="fa-solid fa-wand-magic-sparkles mb-2 fs-3 text-primary d-block"></i>
+                            <p class="mb-3">No AI report diagnostics generated for this student yet.</p>
+                            <a href="/ai/analyze/{{ student.id }}" class="btn btn-sm btn-primary">Generate AI Diagnostic Report</a>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Teacher Remarks Log -->
+                <div class="section-card">
+                    <h5 class="text-white mb-3 fw-bold"><i class="fa-solid fa-comments text-primary me-2"></i> Teacher Remarks Log</h5>
+                    {% if remarks %}
+                        <div class="remarks-container">
+                            {% for rem in remarks %}
+                            <div class="remark-item d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-white m-0 small">{{ rem.remark }}</p>
+                                    <small class="text-muted-custom">By: {{ rem.teacher_name or 'Teacher' }} | Date: {{ rem.created_at[:16] }}</small>
+                                </div>
+                                {% if session.get('admin') %}
+                                <a href="/student/remark/delete/{{ rem.id }}?student_id={{ student.id }}" class="text-danger small ms-2" onclick="return confirm('Delete this remark?')"><i class="fa-solid fa-xmark"></i></a>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted-custom text-center py-3 m-0 small">No teacher remarks have been logged for {{ student.name }}.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BS JS Bundle -->
+    <!-- Attendance data elements for Chart.js -->
+    <div id="attendance-data" style="display:none;"
+         data-present="{{ attendance.present }}"
+         data-absent="{{ attendance.absent }}"
+         data-late="{{ attendance.late }}"
+         data-leave="{{ attendance.leave }}">
+    </div>
+
+    <!-- BS JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Attendance chart
+        const attDataEl = document.getElementById('attendance-data');
+        const presentVal = parseInt(attDataEl.getAttribute('data-present') || '0');
+        const absentVal = parseInt(attDataEl.getAttribute('data-absent') || '0');
+        const lateVal = parseInt(attDataEl.getAttribute('data-late') || '0');
+        const leaveVal = parseInt(attDataEl.getAttribute('data-leave') || '0');
+
+        new Chart(document.getElementById('chartStudentAttendance'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Present', 'Absent', 'Late', 'Leave'],
+                datasets: [{
+                    data: [presentVal, absentVal, lateVal, leaveVal],
+                    backgroundColor: ['#10b981', '#ef4444', '#f59e0b', '#3b82f6'],
+                    borderWidth: 1,
+                    borderColor: '#1e293b'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: { color: '#94a3b8', boxWidth: 12, font: { size: 10 } }
+                    }
+                }
+            }
+        });
+    </script>
+
+    <!-- Export PDF Options Modal -->
+    <div class="modal fade" id="exportPdfModal" tabindex="-1" aria-labelledby="exportPdfModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background: #1e293b; border: 1px solid var(--glass-border); border-radius: 16px; backdrop-filter: blur(16px); color: white;">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title fw-bold" id="exportPdfModalLabel"><i class="fa-solid fa-file-pdf text-danger me-2"></i> Export Report Card Options</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-start">
+                    <p class="small text-muted-custom mb-4">Choose which additional sections you would like to bundle into the exported PDF Report Card for <strong>{{ student.name }}</strong>.</p>
+                    
+                    <form id="exportPdfForm" action="/reports/pdf/student/{{ student.id }}" method="get">
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" name="include_attendance" id="chkIncludeAttendance" value="1" checked style="cursor: pointer;">
+                            <label class="form-check-label fw-semibold" for="chkIncludeAttendance" style="cursor: pointer;">Include Detailed Attendance History Log</label>
+                            <div class="small text-muted-custom">Appends a table showing exact dates, status (Present/Absent/Late/Leave), and marked by details.</div>
+                        </div>
+                        
+                        <div class="form-check form-switch mb-4" {% if not ai_report %}style="opacity: 0.5;"{% endif %}>
+                            <input class="form-check-input" type="checkbox" name="include_ai" id="chkIncludeAi" value="1" {% if ai_report %}checked{% else %}disabled{% endif %} style="cursor: pointer;">
+                            <label class="form-check-label fw-semibold" for="chkIncludeAi" style="cursor: pointer;">Include AI Performance Analytics Report</label>
+                            {% if ai_report %}
+                                <div class="small text-muted-custom">Appends the Gemma/Llama risk score analysis, weak subjects list, and customized guidance report.</div>
+                            {% else %}
+                                <div class="small text-warning"><i class="fa-solid fa-triangle-exclamation"></i> No AI report generated yet. Run AI Analysis first to enable.</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex gap-2 justify-content-end mt-4">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-danger"><i class="fa-solid fa-file-arrow-down me-1"></i> Download PDF Report</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

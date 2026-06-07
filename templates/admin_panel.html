@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+
+<body>
+
+{% include 'sidebar.html' %}
+
+<div class="main">
+
+    <div class="card">
+
+        <h2>Admin Panel</h2>
+
+        <h3>Teachers</h3>
+        {% for t in teachers %}
+        <div class="result-item" onclick="location.href='/teacher/{{t[0]}}'">
+            👨‍🏫 {{t[1]}}
+        </div>
+        {% endfor %}
+
+        <hr>
+
+        <h3>Students</h3>
+        {% for s in students %}
+        <div class="result-item" onclick="location.href='/student/{{s[0]}}'">
+            🎓 {{s[1]}}
+        </div>
+        {% endfor %}
+
+    </div>
+
+</div>
+
+
+
+</body>
+</html>

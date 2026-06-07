@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Management - PTMHSS ERP</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom styling -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        .main {
+            padding: 25px;
+            background-color: #0f172a;
+            min-height: 100vh;
+        }
+        .section-card {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+        .text-muted-custom {
+            color: #94a3b8 !important;
+        }
+        .table-custom {
+            color: #e2e8f0;
+        }
+        .table-custom th {
+            background-color: #0f172a;
+            border-color: #334155;
+            color: #94a3b8;
+        }
+        .table-custom td {
+            border-color: #334155;
+            vertical-align: middle;
+        }
+        .btn-status {
+            padding: 2px 8px;
+            font-size: 0.8rem;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar Inclusion -->
+    {% include 'sidebar.html' %}
+
+    <div class="main">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+            <div>
+                <h1 class="h2 text-white fw-bold m-0"><i class="fa-solid fa-calendar-check text-primary me-2"></i> Attendance Management</h1>
+                <p class="text-muted-custom m-0">Bulk mark, edit, and analyze student presence</p>
+            </div>
+            <div>
+                <a href="#markSection" class="btn btn-primary"><i class="fa-solid fa-plus me-1"></i> Mark Daily Attendance</a>
+            </div>
+        </div>
+
+        <!-- Attendance Analytics Warning Cards -->
+        <div class="row g-3 mb-4">
+            <!-- Under 60% Critical -->
+            <div class="col-12 col-md-3">
+                <div class="card bg-danger bg-opacity-25 border border-danger p-3 rounded-3 text-white">
+                    <h6 class="text-danger fw-bold"><i class="fa-solid fa-circle-xmark me-1"></i> Critical Attendance (<60%)</h6>
+                    <h3 class="fw-bold my-1">{{ critical_count }}</h3>
+                    <p class="small text-muted-custom mb-0">Students require immediate academic intervention.</p>
+                </div>
+            </div>
+            <!-- Under 75% Risk -->
+            <div class="col-12 col-md-3">
+                <div class="card bg-warning bg-opacity-25 border border-warning p-3 rounded-3 text-white">
+                    <h6 class="text-warning fw-bold"><i class="fa-solid fa-triangle-exclamation me-1"></i> Danger Zone (<75%)</h6>
+                    <h3 class="fw-bold my-1">{{ danger_count }}</h3>
+                    <p class="small text-muted-custom mb-0">Below minimum board standards.</p>
+                </div>
+            </div>
+            <!-- Under 80% Warning -->
+            <div class="col-12 col-md-3">
+                <div class="card bg-info bg-opacity-25 border border-info p-3 rounded-3 text-white">
+                    <h6 class="text-info fw-bold"><i class="fa-solid fa-circle-info me-1"></i> Warning Zone (<80%)</h6>
+                    <h3 class="fw-bold my-1">{{ warning_count }}</h3>
+                    <p class="small text-muted-custom mb-0">Watch closely for absence patterns.</p>
+                </div>
+            </div>
+            <!-- Under 90% Moderate -->
+            <div class="col-12 col-md-3">
+                <div class="card bg-secondary bg-opacity-25 border border-secondary p-3 rounded-3 text-white">
+                    <h6 class="text-secondary fw-bold"><i class="fa-solid fa-circle-question me-1"></i> Borderline Zone (<90%)</h6>
+                    <h3 class="fw-bold my-1">{{ borderline_count }}</h3>
+                    <p class="small text-muted-custom mb-0">Requires improvement to reach A-Grade level.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Bulk Mark Attendance -->
+        <div class="section-card" id="markSection">
+            <h5 class="text-white mb-3 fw-bold"><i class="fa-solid fa-user-check text-success me-2"></i> Bulk Daily Attendance Sheet</h5>
+            
+            <form action="/attendance/mark" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="row g-3 align-items-center mb-4">
+                    <div class="col-12 col-md-4">
+                        <label class="form-label text-muted-custom small">Attendance Date</label>
+                        <input type="date" name="attendance_date" class="form-control bg-dark text-white border-secondary" value="{{ today_date }}" required>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label class="form-label text-muted-custom small">Filter Stream</label>
+                        <select id="streamFilter" class="form-select bg-dark text-white border-secondary" onchange="filterRows()">
+                            <option value="ALL">All Streams</option>
+                            <option value="science">Science</option>
+                            <option value="commerce">Commerce</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label class="form-label text-muted-custom small">Filter Class</label>
+                        <select id="classFilter" class="form-select bg-dark text-white border-secondary" onchange="filterRows()">
+                            <option value="ALL">All Classes</option>
+                            {% for c in classes %}
+                            <option value="{{ c }}">{{ c }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-dark table-custom table-hover align-middle" id="attendanceTable">
+                        <thead>
+                            <tr>
+                                <th>Reg No</th>
+                                <th>Student Name</th>
+                                <th>Class</th>
+                                <th>Status Selection</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if students %}
+                                {% for s in students %}
+                                <tr class="student-row" data-class="{{ s.class }}" data-stream="{{ s.stream }}">
+                                    <td>{{ s.register_no or 'N/A' }}</td>
+                                    <td>
+                                        <a href="/student/{{ s.id }}" class="text-white text-decoration-none fw-semibold">
+                                            🎓 {{ s.name }}
+                                        </a>
+                                    </td>
+                                    <td>{{ s.class or 'N/A' }}</td>
+                                    <td>
+                                        <div class="btn-group" role="group" aria-label="Status select">
+                                            <input type="radio" class="btn-check" name="status_{{ s.id }}" id="pres_{{ s.id }}" value="Present" checked>
+                                            <label class="btn btn-outline-success btn-sm btn-status" for="pres_{{ s.id }}">Present</label>
+
+                                            <input type="radio" class="btn-check" name="status_{{ s.id }}" id="abs_{{ s.id }}" value="Absent">
+                                            <label class="btn btn-outline-danger btn-sm btn-status" for="abs_{{ s.id }}">Absent</label>
+
+                                            <input type="radio" class="btn-check" name="status_{{ s.id }}" id="late_{{ s.id }}" value="Late">
+                                            <label class="btn btn-outline-warning btn-sm btn-status" for="late_{{ s.id }}">Late</label>
+
+                                            <input type="radio" class="btn-check" name="status_{{ s.id }}" id="leave_{{ s.id }}" value="Leave">
+                                            <label class="btn btn-outline-info btn-sm btn-status" for="leave_{{ s.id }}">Leave</label>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <input type="text" name="remarks_{{ s.id }}" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Remarks...">
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted-custom">No students found. Add students first.</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if students %}
+                <button type="submit" class="btn btn-success mt-3 w-100"><i class="fa-solid fa-floppy-disk me-1"></i> Save Daily Attendance Sheet</button>
+                {% endif %}
+            </form>
+        </div>
+
+        <!-- Section: Attendance History Log -->
+        <div class="section-card">
+            <h5 class="text-white mb-3 fw-bold"><i class="fa-solid fa-clock-rotate-left text-warning me-2"></i> Attendance Log History</h5>
+            
+            <div class="table-responsive">
+                <table class="table table-dark table-custom table-hover">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Student</th>
+                            <th>Status</th>
+                            <th>Remarks</th>
+                            <th>Marked By</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if history %}
+                            {% for h in history %}
+                            <tr>
+                                <td>{{ h.attendance_date }}</td>
+                                <td><a href="/student/{{ h.student_id }}" class="text-white text-decoration-none fw-semibold">🎓 {{ h.student_name }}</a></td>
+                                <td>
+                                    {% if h.status == 'Present' %}
+                                        <span class="badge bg-success">Present</span>
+                                    {% elif h.status == 'Absent' %}
+                                        <span class="badge bg-danger">Absent</span>
+                                    {% elif h.status == 'Late' %}
+                                        <span class="badge bg-warning text-dark">Late</span>
+                                    {% else %}
+                                        <span class="badge bg-info text-dark">Leave</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ h.remarks or '' }}</td>
+                                <td>{{ h.marked_by }}</td>
+                                <td>
+                                    <a href="/attendance/delete/{{ h.id }}" class="text-danger small" onclick="return confirm('Delete this record?')"><i class="fa-solid fa-trash-can"></i></a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted-custom">No attendance logs found in database.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- BS JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function filterRows() {
+            let classFilter = document.getElementById("classFilter").value;
+            let streamFilter = document.getElementById("streamFilter").value;
+            let rows = document.querySelectorAll(".student-row");
+            
+            rows.forEach(row => {
+                let cls = row.getAttribute("data-class");
+                let stream = row.getAttribute("data-stream");
+                
+                let matchesClass = (classFilter === "ALL" || cls === classFilter);
+                let matchesStream = (streamFilter === "ALL" || stream === streamFilter);
+                
+                let inputs = row.querySelectorAll("input, select");
+                if (matchesClass && matchesStream) {
+                    row.style.display = "";
+                    inputs.forEach(i => i.disabled = false);
+                } else {
+                    row.style.display = "none";
+                    inputs.forEach(i => i.disabled = true);
+                }
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<!-- Background Glassmorphic Blobs -->
+<div class="glass-bg-blobs">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+</div>
+
+<!-- Floating Hamburguer Toggle Button for Mobile Navigation -->
+<button class="mobile-nav-toggle" onclick="toggleSidebar()" aria-label="Toggle Navigation Menu">
+    <i class="fa-solid fa-bars"></i>
+</button>
+
+<div class="sidebar">
+    <!-- Close Button inside the Sidebar for Mobile -->
+    <button class="sidebar-close-btn" onclick="toggleSidebar()" aria-label="Close Navigation Menu">
+        <i class="fa-solid fa-xmark"></i>
+    </button>
+
+    <div class="logo">
+        <i class="fa-solid fa-graduation-cap me-2 text-primary"></i> PTMHSS ERP
+    </div>
+
+    <div class="nav flex-column">
+        <a href="/" class="nav-link"><i class="fa-solid fa-chart-line me-2"></i> Dashboard</a>
+        <a href="/teachers" class="nav-link"><i class="fa-solid fa-chalkboard-user me-2"></i> Teachers</a>
+        <a href="/students" class="nav-link"><i class="fa-solid fa-user-graduate me-2"></i> Students</a>
+        <a href="/attendance" class="nav-link"><i class="fa-solid fa-calendar-check me-2"></i> Attendance</a>
+        <a href="/leaves" class="nav-link"><i class="fa-solid fa-envelope-open-text me-2"></i> Leaves</a>
+        <a href="/subjects" class="nav-link"><i class="fa-solid fa-book me-2"></i> Subjects</a>
+        <a href="/exams" class="nav-link"><i class="fa-solid fa-file-invoice me-2"></i> Exams</a>
+        <a href="/marks" class="nav-link"><i class="fa-solid fa-square-poll-vertical me-2"></i> Marks</a>
+
+        <div class="mt-4 pt-2 border-top border-secondary">
+            {% if session.get('admin') or session.get('user') %}
+                {% if session.get('admin') %}
+                <a href="/admin-panel" class="nav-link text-warning"><i class="fa-solid fa-sliders me-2"></i> Manage Panel</a>
+                <a href="/admin/batches" class="nav-link text-warning"><i class="fa-solid fa-calendar-days me-2"></i> Batches</a>
+                <a href="/admin/promotion" class="nav-link text-warning"><i class="fa-solid fa-arrow-up-right-from-square me-2"></i> Promotions</a>
+                <a href="/admin/backups" class="nav-link text-warning"><i class="fa-solid fa-database me-2"></i> Backups</a>
+                {% endif %}
+                <a href="/dashboard" class="nav-link text-success"><i class="fa-solid fa-plus me-2"></i> Add Data</a>
+                <a href="/logout" class="nav-link text-danger"><i class="fa-solid fa-right-from-bracket me-2"></i> Logout</a>
+            {% else %}
+                <a href="/admin" class="nav-link text-info"><i class="fa-solid fa-lock me-2"></i> Admin Login</a>
+                <a href="/login" class="nav-link text-info"><i class="fa-solid fa-user-lock me-2"></i> Teacher Login</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+/* Floating mobile toggle button */
+.mobile-nav-toggle {
+    display: none;
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    background: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: white;
+    font-size: 1.3rem;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050; /* Above sidebar fixed structure */
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    transition: background-color 0.2s, transform 0.2s;
+}
+.mobile-nav-toggle:hover {
+    background: #334155;
+}
+.mobile-nav-toggle:active {
+    transform: scale(0.95);
+}
+
+/* Close button inside sidebar */
+.sidebar-close-btn {
+    display: none;
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.4rem;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.sidebar-close-btn:hover {
+    color: white;
+}
+
+@media (max-width: 768px) {
+    .mobile-nav-toggle {
+        display: flex;
+    }
+    .sidebar-close-btn {
+        display: block;
+    }
+    .main {
+        padding-top: 75px !important;
+    }
+}
+</style>
+
+<script>
+function toggleSidebar() {
+    const sidebar = document.querySelector(".sidebar");
+    if (sidebar) {
+        sidebar.classList.toggle("show");
+    }
+}
+
+// --- GLOBAL FORM ENTER KEY INTERCEPTOR ---
+// Prevents Enter key from submitting forms prematurely on all pages
+document.addEventListener("keydown", function(event) {
+    if (event.key === "Enter" || event.keyCode === 13) {
+        const target = event.target;
+        const tag = target.tagName;
+        const type = target.type ? target.type.toLowerCase() : "";
+        
+        // Intercept standard input fields and selects
+        const isInterceptable = (tag === "INPUT" && !["submit", "button", "image", "file", "reset"].includes(type)) || (tag === "SELECT");
+        
+        if (isInterceptable) {
+            const form = target.form;
+            if (form) {
+                // Get list of all currently visible & enabled focusable inputs in this form
+                const focusables = Array.from(form.querySelectorAll("input, select, textarea, button"))
+                    .filter(el => {
+                        if (el.disabled || el.type === "hidden") return false;
+                        // Check if the element is visible
+                        return el.offsetWidth > 0 || el.offsetHeight > 0 || (el.getClientRects && el.getClientRects().length > 0);
+                    });
+                
+                const index = focusables.indexOf(target);
+                
+                // Determine if this is the last editable input field in the form
+                const editables = focusables.filter(el => {
+                    const elTag = el.tagName;
+                    const elType = el.type ? el.type.toLowerCase() : "";
+                    if (elTag === "SELECT" || elTag === "TEXTAREA") return true;
+                    if (elTag === "INPUT") {
+                        return !["submit", "button", "image", "file", "reset"].includes(elType);
+                    }
+                    return false;
+                });
+                
+                const isLastEditable = (editables.indexOf(target) === editables.length - 1);
+                
+                if (!isLastEditable) {
+                    // Prevent default browser form submission
+                    event.preventDefault();
+                    
+                    // Shift focus to the next field in the tab order
+                    if (index > -1 && index < focusables.length - 1) {
+                        focusables[index + 1].focus();
+                    }
+                }
+            }
+        }
+    }
+});
+</script>

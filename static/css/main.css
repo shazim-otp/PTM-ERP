@@ -1,0 +1,376 @@
+* {
+    box-sizing: border-box;
+}
+
+:root {
+    --bg-body: #172030;
+    --text-primary: #f8fafc;
+    --text-secondary: #cbd5e1;
+    --text-muted: #94a3b8;
+    
+    /* Custom Color Palette */
+    --color-orange: #D1855C;
+    --color-gold: #E5BA41;
+    --color-green: #94A378;
+    --color-blue: #2D3C59;
+    
+    /* Premium Glassmorphism Specs */
+    --glass-bg: rgba(45, 60, 89, 0.45); /* Translucent Deep Slate Blue */
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-shadow: 0 8px 32px 0 rgba(15, 23, 42, 0.35);
+    --glass-blur: blur(16px);
+    
+    --sidebar-bg: rgba(45, 60, 89, 0.7);
+    --sidebar-link-hover: rgba(209, 133, 92, 0.12);
+    
+    --input-bg: rgba(45, 60, 89, 0.55);
+    --input-border: rgba(255, 255, 255, 0.08);
+    
+    --primary: #D1855C;        /* Terracotta Orange */
+    --primary-hover: #b46b43;
+    --success: #94A378;        /* Sage Green */
+    --warning: #E5BA41;        /* Mustard Gold */
+    --danger: #ef4444;
+}
+
+body {
+    margin: 0;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg-body) !important;
+    color: var(--text-primary) !important;
+    display: flex;
+    min-height: 100vh;
+}
+
+/* BACKGROUND BLOB DECORATIONS */
+.glass-bg-blobs {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+    background-image: radial-gradient(at 0% 0%, rgba(45, 60, 89, 0.6) 0, transparent 50%), 
+                      radial-gradient(at 50% 0%, rgba(229, 186, 65, 0.12) 0, transparent 50%), 
+                      radial-gradient(at 100% 0%, rgba(209, 133, 92, 0.15) 0, transparent 50%),
+                      radial-gradient(at 0% 100%, rgba(148, 163, 120, 0.12) 0, transparent 50%),
+                      radial-gradient(at 100% 100%, rgba(45, 60, 89, 0.8) 0, transparent 50%);
+}
+
+.blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(100px);
+    opacity: 0.3;
+    animation: blob-move 25s infinite alternate ease-in-out;
+}
+
+.blob-1 {
+    width: 480px;
+    height: 480px;
+    background: var(--color-orange); /* Terracotta */
+    top: -80px;
+    left: 15%;
+}
+
+.blob-2 {
+    width: 550px;
+    height: 550px;
+    background: var(--color-blue); /* Deep slate blue */
+    bottom: -120px;
+    right: 5%;
+    animation-delay: 5s;
+}
+
+.blob-3 {
+    width: 380px;
+    height: 380px;
+    background: var(--color-gold); /* Mustard gold */
+    top: 35%;
+    left: 55%;
+    animation-delay: 10s;
+}
+
+.blob-4 {
+    width: 400px;
+    height: 400px;
+    background: var(--color-green); /* Sage green */
+    bottom: 20%;
+    left: 10%;
+    animation-delay: 15s;
+}
+
+@keyframes blob-move {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(60px, -60px) scale(1.15); }
+    100% { transform: translate(-40px, 50px) scale(0.9); }
+}
+
+/* SIDEBAR */
+.sidebar {
+    width: 220px;
+    height: 100vh;
+    background: var(--sidebar-bg) !important;
+    backdrop-filter: var(--glass-blur) saturate(180%) !important;
+    -webkit-backdrop-filter: var(--glass-blur) saturate(180%) !important;
+    border-right: 1px solid var(--glass-border) !important;
+    box-shadow: 4px 0 32px 0 rgba(0, 0, 0, 0.25) !important;
+    padding: 20px;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 1000;
+    transition: transform 0.3s ease;
+}
+
+.sidebar .logo {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 25px;
+    color: var(--text-primary) !important;
+}
+
+.sidebar .nav-link {
+    display: block;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    color: var(--text-secondary) !important;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.sidebar .nav-link:hover {
+    background: var(--sidebar-link-hover) !important;
+    color: var(--text-primary) !important;
+    transform: translateX(3px);
+}
+
+/* Specific Sidebar Highlight Links Override */
+.sidebar .nav-link.text-warning { color: var(--color-gold) !important; }
+.sidebar .nav-link.text-success { color: var(--color-green) !important; }
+.sidebar .nav-link.text-danger { color: #f87171 !important; }
+.sidebar .nav-link.text-info { color: var(--color-gold) !important; }
+
+/* MAIN CONTAINER OVERRIDES */
+.main {
+    margin-left: 220px;
+    padding: 25px;
+    width: 100%;
+    background: transparent !important;
+    min-height: 100vh;
+    transition: margin-left 0.3s ease;
+}
+
+/* GLASS CARDS & SECTIONS */
+.card, .section-card, .chart-container, .card-kpi {
+    background: var(--glass-bg) !important;
+    backdrop-filter: var(--glass-blur) saturate(180%) !important;
+    -webkit-backdrop-filter: var(--glass-blur) saturate(180%) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 16px !important;
+    box-shadow: var(--glass-shadow) !important;
+    padding: 20px !important;
+    margin-bottom: 25px !important;
+    color: var(--text-primary) !important;
+}
+
+/* CARD KPI SPECIFIC OVERRIDES */
+.card-kpi {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    border-left: 4px solid var(--primary) !important;
+}
+.card-kpi:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.4) !important;
+    background: rgba(45, 60, 89, 0.6) !important;
+}
+
+.card-kpi.students { border-left-color: var(--success) !important; }
+.card-kpi.teachers { border-left-color: var(--primary) !important; }
+.card-kpi.attendance { border-left-color: var(--warning) !important; }
+.card-kpi.exams { border-left-color: var(--color-gold) !important; }
+.card-kpi.subjects { border-left-color: var(--success) !important; }
+.card-kpi.risk { border-left-color: var(--danger) !important; }
+
+.kpi-icon {
+    font-size: 2.5rem;
+    position: absolute;
+    right: 15px;
+    bottom: 10px;
+    color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* TYPOGRAPHY OVERRIDES */
+h1, h2, h3, h4, h5, h6 {
+    color: var(--text-primary) !important;
+    font-weight: 700 !important;
+}
+p, span, div {
+    color: var(--text-primary);
+}
+.text-muted, .text-muted-custom, .small, label {
+    color: var(--text-muted) !important;
+}
+
+/* PREMIUM BUTTONS */
+.button, .login-btn {
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    border: none;
+    border-radius: 8px;
+    background: var(--primary) !important;
+    color: white !important;
+    font-weight: 600 !important;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(209, 133, 92, 0.25) !important;
+    transition: all 0.2s ease !important;
+}
+
+.button:hover, .login-btn:hover {
+    background: var(--primary-hover) !important;
+    box-shadow: 0 6px 16px rgba(209, 133, 92, 0.4) !important;
+    transform: translateY(-1px) !important;
+}
+
+.button:active, .login-btn:active {
+    transform: translateY(1px) !important;
+}
+
+.button.back {
+    background: var(--color-blue) !important;
+    box-shadow: 0 4px 12px rgba(45, 60, 89, 0.25) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+.button.back:hover {
+    background: #3e527a !important;
+}
+
+/* INPUTS, SELECTS & TEXTAREAS */
+input, select, textarea {
+    width: 100%;
+    padding: 10px 12px;
+    margin-top: 8px;
+    border-radius: 8px;
+    background: var(--input-bg) !important;
+    border: 1px solid var(--input-border) !important;
+    color: var(--text-primary) !important;
+    outline: none !important;
+    box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.1) !important;
+    transition: all 0.2s ease-in-out !important;
+}
+
+input:focus, select:focus, textarea:focus {
+    background: var(--color-blue) !important;
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 4px rgba(209, 133, 92, 0.25), inset 0 2px 4px 0 rgba(0, 0, 0, 0.1) !important;
+}
+
+/* BOOTSTRAP OVERRIDES TO COMPLY WITH LIGHT GLASS */
+.table-dark {
+    --bs-table-bg: transparent !important;
+    --bs-table-color: var(--text-primary) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.bg-dark {
+    background-color: rgba(45, 60, 89, 0.3) !important;
+}
+
+.btn-dark {
+    background-color: var(--primary) !important;
+    color: white !important;
+}
+
+.input-group-text.bg-dark {
+    background-color: rgba(45, 60, 89, 0.3) !important;
+    border-color: var(--input-border) !important;
+    color: var(--text-secondary) !important;
+}
+
+/* GLASS TABLES */
+.table-custom {
+    color: var(--text-primary) !important;
+}
+
+.table-custom th {
+    background-color: rgba(255, 255, 255, 0.03) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    color: var(--text-secondary) !important;
+    font-weight: 600 !important;
+}
+
+.table-custom td {
+    border-color: rgba(255, 255, 255, 0.06) !important;
+    color: var(--text-primary) !important;
+}
+
+.table-hover tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(209, 133, 92, 0.06) !important;
+}
+
+/* SEARCH & RESULTS OVERRIDES */
+.search-box, .search-container {
+    margin-bottom: 20px;
+}
+
+#results, .search-results {
+    background: rgba(45, 60, 89, 0.95) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid var(--glass-border) !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3) !important;
+    border-radius: 8px;
+    margin-top: 5px;
+    overflow: hidden;
+    z-index: 1100;
+}
+
+.result-item {
+    padding: 10px 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+    color: var(--text-primary) !important;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.result-item:hover {
+    background: rgba(209, 133, 92, 0.15) !important;
+}
+
+.result-item:last-child {
+    border-bottom: none !important;
+}
+
+/* IMAGES */
+img {
+    max-width: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+}
+
+/* MOBILE VIEWPORTS OVERRIDES */
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+    }
+
+    .sidebar.show {
+        transform: translateX(0);
+    }
+
+    .main {
+        margin-left: 0;
+        padding: 15px;
+    }
+}

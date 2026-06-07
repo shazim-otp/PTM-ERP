@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - PTM HSS ERP</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom styling -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+
+        .main {
+            padding: 25px;
+            background-color: #0f172a;
+            min-height: 100vh;
+        }
+
+        .card-kpi {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            backdrop-filter: blur(12px);
+            padding: 20px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-kpi:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.15);
+            background: rgba(30, 41, 59, 0.9);
+        }
+
+        .card-kpi::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: #3b82f6;
+        }
+
+        .card-kpi.students::before {
+            background: #10b981;
+        }
+
+        .card-kpi.teachers::before {
+            background: #3b82f6;
+        }
+
+        .card-kpi.attendance::before {
+            background: #f59e0b;
+        }
+
+        .card-kpi.exams::before {
+            background: #ec4899;
+        }
+
+        .card-kpi.subjects::before {
+            background: #8b5cf6;
+        }
+
+        .card-kpi.risk::before {
+            background: #ef4444;
+        }
+
+        .kpi-icon {
+            font-size: 2.5rem;
+            opacity: 0.85;
+            position: absolute;
+            right: 15px;
+            bottom: 10px;
+            color: rgba(255, 255, 255, 0.15);
+        }
+
+        .chart-container {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 25px;
+            min-height: 320px;
+        }
+
+        .text-muted-custom {
+            color: #94a3b8 !important;
+        }
+
+        .table-custom {
+            color: #e2e8f0;
+        }
+
+        .table-custom th {
+            background-color: #0f172a;
+            border-color: #334155;
+            color: #94a3b8;
+        }
+
+        .table-custom td {
+            border-color: #334155;
+            vertical-align: middle;
+        }
+
+        /* Search Box */
+        .search-container {
+            position: relative;
+            margin-bottom: 25px;
+        }
+
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            z-index: 1100;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .result-item {
+            padding: 10px 15px;
+            border-bottom: 1px solid #334155;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .result-item:hover {
+            background: #334155;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Sidebar Inclusion -->
+    {% include 'sidebar.html' %}
+
+    <!-- Main Content Area -->
+    <div class="main">
+        <!-- Top Header & Search -->
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+            <div>
+                <h1 class="h2 text-white fw-bold"><i class="fa-solid fa-gauge-high text-primary me-2"></i> PTMHSS ERP Analytics</h1>
+                <p class="text-muted-custom m-0">Active Batch: <strong class="text-warning">{{ active_batch_name }}</strong> | Real-time system overview and AI diagnostics</p>
+            </div>
+
+            <div class="search-container col-12 col-md-4 mt-3 mt-md-0">
+                <div class="input-group">
+                    <span class="input-group-text bg-dark border-secondary text-muted-custom"><i
+                            class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" id="search" class="form-control bg-dark text-white border-secondary"
+                        placeholder="Search students or teachers..." onkeyup="searchStudent()">
+                </div>
+                <div id="results" class="search-results d-none"></div>
+            </div>
+        </div>
+
+        <!-- KPI Grid -->
+        <div class="row g-3 mb-4">
+            <!-- Total Students -->
+            <div class="col-6 col-lg-3">
+                <div class="card-kpi students">
+                    <h6 class="text-uppercase text-muted-custom fw-semibold mb-1 small">Total Students</h6>
+                    <h2 class="text-white fw-bold mb-0">{{ total_students }}</h2>
+                    <i class="fa-solid fa-user-graduate kpi-icon"></i>
+                </div>
+            </div>
+            <!-- Total Teachers -->
+            <div class="col-6 col-lg-3">
+                <div class="card-kpi teachers">
+                    <h6 class="text-uppercase text-muted-custom fw-semibold mb-1 small">Total Teachers</h6>
+                    <h2 class="text-white fw-bold mb-0">{{ total_teachers }}</h2>
+                    <i class="fa-solid fa-chalkboard-user kpi-icon"></i>
+                </div>
+            </div>
+            <!-- Attendance Pct -->
+            <div class="col-6 col-lg-3">
+                <div class="card-kpi attendance">
+                    <h6 class="text-uppercase text-muted-custom fw-semibold mb-1 small">Avg Attendance</h6>
+                    <h2 class="text-white fw-bold mb-0">{{ "%.1f"|format(overall_attendance_pct) }}%</h2>
+                    <i class="fa-solid fa-calendar-check kpi-icon"></i>
+                </div>
+            </div>
+            <!-- Total Exams -->
+            <div class="col-6 col-lg-3">
+                <div class="card-kpi exams">
+                    <h6 class="text-uppercase text-muted-custom fw-semibold mb-1 small">Active Exams</h6>
+                    <h2 class="text-white fw-bold mb-0">{{ total_exams }}</h2>
+                    <i class="fa-solid fa-file-invoice kpi-icon"></i>
+                </div>
+            </div>
+            <!-- Total Subjects -->
+            <div class="col-6 col-lg-3">
+                <div class="card-kpi subjects">
+                    <h6 class="text-uppercase text-muted-custom fw-semibold mb-1 small">Total Subjects</h6>
+                    <h2 class="text-white fw-bold mb-0">{{ total_subjects }}</h2>
+                    <i class="fa-solid fa-book kpi-icon"></i>
+                </div>
+            </div>
+            <!-- High/Critical Risk -->
+            <div class="col-6 col-lg-3">
+                <div class="card-kpi risk">
+                    <h6 class="text-uppercase text-muted-custom fw-semibold mb-1 small">At-Risk Students</h6>
+                    <h2 class="text-white fw-bold mb-0">{{ high_risk_count }}</h2>
+                    <i class="fa-solid fa-triangle-exclamation kpi-icon"></i>
+                </div>
+            </div>
+            <!-- Low Attendance Warning -->
+            <div class="col-6 col-lg-3">
+                <div class="card-kpi risk">
+                    <h6 class="text-uppercase text-muted-custom fw-semibold mb-1 small">Low Attendance (<75%)< /h6>
+                            <h2 class="text-warning fw-bold mb-0">{{ low_attendance_count }}</h2>
+                            <i class="fa-solid fa-clock kpi-icon"></i>
+                </div>
+            </div>
+            <!-- Top Performers -->
+            <div class="col-6 col-lg-3">
+                <div class="card-kpi students">
+                    <h6 class="text-uppercase text-muted-custom fw-semibold mb-1 small">Top Performers (>85%)</h6>
+                    <h2 class="text-success fw-bold mb-0">{{ top_performers_count }}</h2>
+                    <i class="fa-solid fa-trophy kpi-icon"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stream & Subject Categories Breakdown -->
+        <div class="row g-3 mb-4">
+            <div class="col-12">
+                <div class="section-card">
+                    <h5 class="text-white mb-3 fw-bold"><i class="fa-solid fa-sitemap text-primary me-2"></i> Stream &
+                        Subject Categories Breakdown</h5>
+                    <div class="row g-3 text-center">
+                        <div class="col-6 col-md-4 col-lg-2">
+                            <div class="p-3 bg-dark bg-opacity-50 border border-secondary rounded">
+                                <h6 class="small text-muted-custom mb-1 text-uppercase">Science Stream</h6>
+                                <h3 class="fw-bold text-info m-0">{{ science }}</h3>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4 col-lg-2">
+                            <div class="p-3 bg-dark bg-opacity-50 border border-secondary rounded">
+                                <h6 class="small text-muted-custom mb-1 text-uppercase">Commerce Stream</h6>
+                                <h3 class="fw-bold text-success m-0">{{ commerce }}</h3>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4 col-lg-2">
+                            <div class="p-3 bg-dark bg-opacity-50 border border-secondary rounded">
+                                <h6 class="small text-muted-custom mb-1 text-uppercase">Comp. Science</h6>
+                                <h3 class="fw-bold text-warning m-0">{{ cs }}</h3>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4 col-lg-2">
+                            <div class="p-3 bg-dark bg-opacity-50 border border-secondary rounded">
+                                <h6 class="small text-muted-custom mb-1 text-uppercase">Biology</h6>
+                                <h3 class="fw-bold text-danger m-0">{{ bio }}</h3>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4 col-lg-2">
+                            <div class="p-3 bg-dark bg-opacity-50 border border-secondary rounded">
+                                <h6 class="small text-muted-custom mb-1 text-uppercase">Mathematics</h6>
+                                <h3 class="fw-bold text-primary m-0">{{ maths }}</h3>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4 col-lg-2">
+                            <div class="p-3 bg-dark bg-opacity-50 border border-secondary rounded">
+                                <h6 class="small text-muted-custom mb-1 text-uppercase">Computer Apps</h6>
+                                <h3 class="fw-bold text-secondary m-0">{{ ca }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Dashboard -->
+        <div class="row">
+            <!-- Risk Distribution -->
+            <div class="col-12 col-lg-6">
+                <div class="chart-container">
+                    <h5 class="text-white mb-3"><i class="fa-solid fa-circle-exclamation text-danger me-2"></i> AI
+                        Academic Risk Distribution</h5>
+                    <div style="max-height: 250px; display: flex; justify-content: center;">
+                        <canvas id="chartRiskDistribution"></canvas>
+                    </div>
+                </div>
+            </div>
+            <!-- Student Rankings Table -->
+            <div class="col-12 col-lg-6">
+                <div class="chart-container">
+                    <h5 class="text-white mb-3"><i class="fa-solid fa-list-ol text-warning me-2"></i> Top 5 Student
+                        Rankings</h5>
+                    <div class="table-responsive">
+                        <table class="table table-dark table-custom table-hover m-0">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Student Name</th>
+                                    <th class="text-end">Average Marks %</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if student_rankings %}
+                                {% for r in student_rankings %}
+                                <tr onclick="location.href='/student/{{ r.id }}'" style="cursor: pointer;">
+                                    <td><span class="badge bg-primary">#{{ loop.index }}</span></td>
+                                    <td>{{ r.name }}</td>
+                                    <td class="text-end fw-bold text-success">{{ "%.1f"|format(r.avg_marks) }}%</td>
+                                </tr>
+                                {% endfor %}
+                                {% else %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted-custom">No exam marks entered yet.
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Chart Data Container -->
+    <div id="chart-data" class="d-none" data-risk-low='{{ risk_distribution.low | default(0) }}'
+        data-risk-medium='{{ risk_distribution.medium | default(0) }}'
+        data-risk-high='{{ risk_distribution.high | default(0) }}'
+        data-risk-critical='{{ risk_distribution.critical | default(0) }}'>
+    </div>
+
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/search.js') }}"></script>
+    <script>
+        // Custom search box rendering helpers
+        function escapeHTML(str) {
+            if (!str) return '';
+            return str.replace(/[&<>'"]/g,
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
+        async function searchStudent() {
+            let searchInput = document.getElementById("search");
+            let resultsDiv = document.getElementById("results");
+            let query = searchInput.value;
+            if (query.length === 0) {
+                resultsDiv.innerHTML = "";
+                resultsDiv.classList.add("d-none");
+                return;
+            }
+            let res = await fetch(`/search?q=${encodeURIComponent(query)}`);
+            let data = await res.json();
+            let html = "";
+            if (data.length === 0) {
+                html = "<div class='result-item text-white'>No results found</div>";
+            } else {
+                data.forEach(item => {
+                    let icon = item.type === "teacher" ? "👨‍🏫" : "🎓";
+                    let escapedName = escapeHTML(item.name);
+                    html += `<div class="result-item text-white" onclick="openItem('${item.type}', ${item.id})">
+                                ${icon} ${escapedName} <span class="badge bg-secondary ms-2">${item.type}</span>
+                             </div>`;
+                });
+            }
+            resultsDiv.innerHTML = html;
+            resultsDiv.classList.remove("d-none");
+        }
+        function openItem(type, id) {
+            window.location.href = type === "teacher" ? `/teacher/${id}` : `/student/${id}`;
+        }
+
+        // --- CHARTS INJECTIONS FROM BACKEND (VIA DATA ATTRIBUTES) ---
+        const dataEl = document.getElementById('chart-data');
+        const riskLabels = ['Low', 'Medium', 'High', 'Critical'];
+        const riskData = [
+            parseInt(dataEl.getAttribute('data-risk-low') || '0'),
+            parseInt(dataEl.getAttribute('data-risk-medium') || '0'),
+            parseInt(dataEl.getAttribute('data-risk-high') || '0'),
+            parseInt(dataEl.getAttribute('data-risk-critical') || '0')
+        ];
+
+        // 5. Risk Doughnut (Pie) Chart
+        new Chart(document.getElementById('chartRiskDistribution'), {
+            type: 'doughnut',
+            data: {
+                labels: riskLabels,
+                datasets: [{
+                    data: riskData,
+                    backgroundColor: ['#10b981', '#f59e0b', '#f97316', '#ef4444'],
+                    borderWidth: 1,
+                    borderColor: '#1e293b'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: '#94a3b8' }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <title>Edit Student - PTMHSS ERP</title>
+</head>
+<body>
+{% include 'sidebar.html' %}
+
+<div class="main">
+    <div class="card">
+        <h2>✏️ Edit Student Profile</h2>
+
+        <form method="post" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label style="display: block; margin-top: 12px; font-size: 14px; color: #94a3b8;">Student Name</label>
+            <input name="name" value="{{ student['name'] }}" placeholder="Name" required>
+
+            <label style="display: block; margin-top: 12px; font-size: 14px; color: #94a3b8;">Academic Batch</label>
+            <select name="batch_id" required>
+                {% for b in batches %}
+                <option value="{{ b.id }}" {% if student['batch_id'] == b.id %}selected{% endif %}>{{ b.batch_name }} {% if b.is_active %}(Active){% endif %}</option>
+                {% endfor %}
+            </select>
+
+            <label style="display: block; margin-top: 12px; font-size: 14px; color: #94a3b8;">Stream</label>
+            <select name="stream">
+                <option value="science" {% if student['stream'] == 'science' %}selected{% endif %}>Science</option>
+                <option value="commerce" {% if student['stream'] == 'commerce' %}selected{% endif %}>Commerce</option>
+            </select>
+
+            <label style="display: block; margin-top: 12px; font-size: 14px; color: #94a3b8;">Category</label>
+            <select name="category">
+                <option value="cs" {% if student['category'] == 'cs' %}selected{% endif %}>CS</option>
+                <option value="bio" {% if student['category'] == 'bio' %}selected{% endif %}>Bio</option>
+                <option value="maths" {% if student['category'] == 'maths' %}selected{% endif %}>Maths</option>
+                <option value="ca" {% if student['category'] == 'ca' %}selected{% endif %}>CA</option>
+            </select>
+
+            <label style="display: block; margin-top: 12px; font-size: 14px; color: #94a3b8;">Father's Name</label>
+            <input name="father_name" value="{{ student['father_name'] }}" placeholder="Father Name" required>
+
+            <label style="display: block; margin-top: 12px; font-size: 14px; color: #94a3b8;">Mother's Name</label>
+            <input name="mother_name" value="{{ student['mother_name'] }}" placeholder="Mother Name" required>
+
+            <label style="display: block; margin-top: 12px; font-size: 14px; color: #94a3b8;">Father's Phone Number</label>
+            <input name="phone_father" value="{{ student['phone_father'] }}" placeholder="Father Phone" required>
+
+            <label style="display: block; margin-top: 12px; font-size: 14px; color: #94a3b8;">Mother's Phone Number</label>
+            <input name="phone_mother" value="{{ student['phone_mother'] }}" placeholder="Mother Phone" required>
+
+            <label style="display: block; margin-top: 12px; font-size: 14px; color: #94a3b8;">Student's Phone Number</label>
+            <input name="phone_student" value="{{ student['phone_student'] or '' }}" placeholder="Student Phone">
+
+            <label style="display: block; margin-top: 12px; font-size: 14px; color: #94a3b8;">Register Number</label>
+            <input name="register_no" value="{{ student['register_no'] }}" placeholder="Register Number">
+
+            <label style="display: block; margin-top: 12px; font-size: 14px; color: #94a3b8;">Admission Number</label>
+            <input name="admission_no" value="{{ student['admission_no'] or '' }}" placeholder="Admission Number">
+
+            <label style="display: block; margin-top: 12px; font-size: 14px; color: #94a3b8;">Aadhaar Number</label>
+            <input name="adhar_no" value="{{ student['adhar_no'] or '' }}" placeholder="Aadhaar Number">
+
+            <div style="display: flex; gap: 15px; margin-top: 12px;">
+                <div style="flex: 1;">
+                    <label style="display: block; font-size: 14px; color: #94a3b8;">Bank Account Number</label>
+                    <input name="bank_acc_no" value="{{ student['bank_acc_no'] or '' }}" placeholder="Bank Account Number">
+                </div>
+                <div style="flex: 1;">
+                    <label style="display: block; font-size: 14px; color: #94a3b8;">IFSC Code (Optional)</label>
+                    <input name="ifsc_code" value="{{ student['ifsc_code'] or '' }}" placeholder="IFSC Code (Optional)">
+                </div>
+            </div>
+
+            <label style="display: block; margin-top: 12px; font-size: 14px; color: #94a3b8;">Class</label>
+            <input name="class" value="{{ student['class'] }}" placeholder="Class">
+
+            <label style="display: block; margin-top: 12px; font-size: 14px; color: #94a3b8;">Admission Type</label>
+            <select name="admission_type">
+                <option value="" {% if not student['admission_type'] %}selected{% endif %}>Select Type of Admission</option>
+                <option value="general" {% if student['admission_type'] == 'general' %}selected{% endif %}>General</option>
+                <option value="community" {% if student['admission_type'] == 'community' %}selected{% endif %}>Community</option>
+                <option value="management" {% if student['admission_type'] == 'management' %}selected{% endif %}>Management</option>
+            </select>
+
+            <label style="display: block; margin-top: 12px; font-size: 14px; color: #94a3b8;">Caste Category</label>
+            <select name="caste_category">
+                <option value="" {% if not student['caste_category'] %}selected{% endif %}>Select Caste Category</option>
+                <option value="general" {% if student['caste_category'] == 'general' %}selected{% endif %}>General</option>
+                <option value="sc" {% if student['caste_category'] == 'sc' %}selected{% endif %}>SC</option>
+                <option value="st" {% if student['caste_category'] == 'st' %}selected{% endif %}>ST</option>
+                <option value="obc" {% if student['caste_category'] == 'obc' %}selected{% endif %}>OBC</option>
+            </select>
+
+            <label style="display: block; margin-top: 12px; font-size: 14px; color: #94a3b8;">Co-Curricular Activities</label>
+            <input name="co_curricular" value="{{ student['co_curricular'] or '' }}" placeholder="Co-Curricular Activities">
+
+            <label style="display: block; margin-top: 12px; font-size: 14px; color: #94a3b8;">NSS/Scouts/JRC/LK</label>
+            <select name="nss_scouts_jrc_lk">
+                <option value="" {% if not student['nss_scouts_jrc_lk'] %}selected{% endif %}>Select NSS/Scouts/JRC/Little Kites</option>
+                <option value="none" {% if student['nss_scouts_jrc_lk'] == 'none' %}selected{% endif %}>None / No Participation</option>
+                <option value="nss" {% if student['nss_scouts_jrc_lk'] == 'nss' %}selected{% endif %}>NSS</option>
+                <option value="scouts" {% if student['nss_scouts_jrc_lk'] == 'scouts' %}selected{% endif %}>Scouts</option>
+                <option value="jrc" {% if student['nss_scouts_jrc_lk'] == 'jrc' %}selected{% endif %}>JRC</option>
+                <option value="little_kites" {% if student['nss_scouts_jrc_lk'] == 'little_kites' %}selected{% endif %}>Little Kites</option>
+            </select>
+
+            <label style="display: block; margin-top: 12px; font-size: 14px; color: #94a3b8;">State Level Participation</label>
+            <input name="state_level_participation" value="{{ student['state_level_participation'] or '' }}" placeholder="State Level Participation (Arts/Sports/Science)">
+
+            <!-- Profile Picture Capture/Upload -->
+            <div class="image-source-toggle" style="margin-top: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-size: 14px; color: #94a3b8;">Profile Picture Source</label>
+                <div style="display: flex; gap: 15px; margin-bottom: 10px;">
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text-primary); margin: 0; font-size: 14px;">
+                        <input type="radio" name="img_source" value="upload" checked onchange="toggleImageSource()" style="width: auto; margin: 0;"> Upload File
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text-primary); margin: 0; font-size: 14px;">
+                        <input type="radio" name="img_source" value="camera" onchange="toggleImageSource()" style="width: auto; margin: 0;"> Use Webcam
+                    </label>
+                </div>
+            </div>
+
+            <div id="imageUploadArea">
+                <input type="file" name="image" accept="image/*">
+            </div>
+
+            <div id="imageCameraArea" style="display: none; text-align: center; border: 1px solid var(--glass-border); padding: 15px; border-radius: 12px; background: rgba(0, 0, 0, 0.15); margin-top: 8px;">
+                <video id="webcam" autoplay playsinline muted style="width: 100%; max-width: 280px; height: auto; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: #000;"></video>
+                <canvas id="canvas" style="display: none;"></canvas>
+                
+                <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px;">
+                    <button type="button" class="button" id="startCamBtn" onclick="startWebcam()" style="margin: 0; width: auto; padding: 8px 15px;"><i class="fa-solid fa-video me-1"></i> Start Camera</button>
+                    <button type="button" class="button" id="captureBtn" onclick="capturePhoto()" style="margin: 0; width: auto; padding: 8px 15px; background: var(--success) !important; display: none;"><i class="fa-solid fa-camera me-1"></i> Capture</button>
+                </div>
+                
+                <div id="capturePreviewArea" style="display: none; margin-top: 15px;">
+                    <p class="small text-success" style="margin-bottom: 5px;"><i class="fa-solid fa-circle-check"></i> Photo Captured!</p>
+                    <img id="capturePreview" style="max-width: 140px; height: auto; border: 2px solid var(--success); border-radius: 8px;">
+                </div>
+            </div>
+            <input type="hidden" name="captured_image" id="captured_image">
+
+            <label style="display: block; margin-top: 12px; font-size: 14px; color: #94a3b8;">Additional Details</label>
+            <textarea name="details" placeholder="Details">{{ student['details'] }}</textarea>
+
+            <button class="button">Update</button>
+        </form>
+    </div>
+</div>
+
+<script>
+// --- WEBCAM CAMERA INTEGRATION ---
+let stream = null;
+
+function toggleImageSource() {
+    let source = document.querySelector('input[name="img_source"]:checked').value;
+    let uploadArea = document.getElementById("imageUploadArea");
+    let cameraArea = document.getElementById("imageCameraArea");
+    
+    if (source === "upload") {
+        uploadArea.style.display = "block";
+        cameraArea.style.display = "none";
+        stopWebcam();
+    } else {
+        uploadArea.style.display = "none";
+        cameraArea.style.display = "block";
+    }
+}
+
+async function startWebcam() {
+    let video = document.getElementById("webcam");
+    let startBtn = document.getElementById("startCamBtn");
+    let captureBtn = document.getElementById("captureBtn");
+    
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+        video.srcObject = stream;
+        video.muted = true;
+        video.play();
+        startBtn.style.display = "none";
+        captureBtn.style.display = "inline-flex";
+    } catch (err) {
+        alert("Unable to access camera: " + err.message);
+        console.error("Camera access error:", err);
+    }
+}
+
+function capturePhoto() {
+    let video = document.getElementById("webcam");
+    let canvas = document.getElementById("canvas");
+    let preview = document.getElementById("capturePreview");
+    let previewArea = document.getElementById("capturePreviewArea");
+    let hiddenInput = document.getElementById("captured_image");
+    
+    if (!stream) return;
+    
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    
+    let ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    let dataUrl = canvas.toDataURL("image/png");
+    hiddenInput.value = dataUrl;
+    
+    preview.src = dataUrl;
+    previewArea.style.display = "block";
+}
+
+function stopWebcam() {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+    }
+    let video = document.getElementById("webcam");
+    if (video) {
+        video.srcObject = null;
+    }
+    let startBtn = document.getElementById("startCamBtn");
+    let captureBtn = document.getElementById("captureBtn");
+    if (startBtn) startBtn.style.display = "inline-flex";
+    if (captureBtn) captureBtn.style.display = "none";
+}
+</script>
+</body>
+</html>

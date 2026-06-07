@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Students List - PTMHSS ERP</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom styling -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        .main {
+            padding: 25px;
+            min-height: 100vh;
+        }
+        .student-item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .student-item-row:hover {
+            transform: translateX(3px);
+            background: rgba(45, 60, 89, 0.6);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar Inclusion -->
+    {% include 'sidebar.html' %}
+
+    <div class="main">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+            <div>
+                <h1 class="h2 text-white fw-bold">
+                    <i class="fa-solid fa-list-ul text-primary me-2"></i> 
+                    {{ stream|capitalize }} - {{ category|upper }} Students
+                </h1>
+                <p class="text-muted m-0">Student directory list matching selected stream category</p>
+            </div>
+            <div>
+                <a href="/students/{{ stream }}" class="btn btn-outline-light"><i class="fa-solid fa-arrow-left me-2"></i> Back to Stream</a>
+            </div>
+        </div>
+
+        <!-- Filter by Batch -->
+        <div class="card p-4">
+            <div class="row align-items-center">
+                <div class="col-12 col-md-8">
+                    <h5 class="text-white fw-bold m-0"><i class="fa-solid fa-calendar-days text-warning me-2"></i> Filter List by Batch</h5>
+                </div>
+                <div class="col-12 col-md-4">
+                    <select id="batchFilter" class="form-select bg-dark text-white border-secondary" onchange="changeBatch(this)">
+                        <option value="all" {% if selected_batch == 'all' or not selected_batch %}selected{% endif %}>All Batches</option>
+                        {% for b in batches %}
+                        <option value="{{ b.id }}" {% if selected_batch == b.id|string %}selected{% endif %}>{{ b.batch_name }} {% if b.is_active %}(Active){% endif %}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- List Section -->
+        <div class="card p-4 mt-4">
+            <h5 class="text-white mb-3 fw-bold"><i class="fa-solid fa-users text-primary me-2"></i> Students ({{ students|length }})</h5>
+            
+            {% if students %}
+                {% for s in students %}
+                <div class="student-item-row" onclick="location.href='/student/{{ s.id }}'">
+                    <div>
+                        <span class="text-white fw-semibold fs-5"><i class="fa-solid fa-graduation-cap text-success me-2"></i> {{ s.name }}</span>
+                        <div class="small text-muted mt-1">Class: {{ s.class or 'N/A' }} | Reg No: {{ s.register_no or 'N/A' }}</div>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-warning text-dark px-3 py-2">Batch: {{ s.batch_name or 'None' }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted text-center py-5">No students found matching this batch filter.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function changeBatch(select) {
+            const batchId = select.value;
+            window.location.href = `/students/{{ stream }}/{{ category }}?batch_id=${batchId}`;
+        }
+    </script>
+</body>
+</html>

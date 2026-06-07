@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Commerce</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+
+<body>
+
+{% include 'sidebar.html' %}
+
+<div class="main">
+
+    <!-- 🔍 SEARCH -->
+    <div class="search-box">
+
+        <input type="text" id="search" placeholder="Search..." onkeyup="searchStudent()">
+
+        <select id="type" onchange="searchStudent()">
+            <option value="">All</option>
+            <option value="student">Students</option>
+            <option value="teacher">Teachers</option>
+        </select>
+
+        <select id="stream" onchange="searchStudent()">
+            <option value="">All Streams</option>
+            <option value="science">Science</option>
+            <option value="commerce" selected>Commerce</option>
+        </select>
+
+        <select id="category" onchange="searchStudent()">
+            <option value="">All Categories</option>
+            <option value="maths">Maths</option>
+            <option value="ca">CA</option>
+        </select>
+
+        <div id="results"></div>
+
+    </div>
+
+    <!-- 📊 CONTENT -->
+    <div class="card">
+
+        <h2>Commerce</h2>
+
+        <a href="/students/commerce/maths">
+            <button class="button">📊 Mathematics</button>
+        </a>
+
+        <a href="/students/commerce/ca">
+            <button class="button">💻 Computer Application</button>
+        </a>
+
+    </div>
+
+</div>
+
+<!-- ⚙️ SCRIPTS -->
+<script src="{{ url_for('static', filename='js/search.js') }}"></script>
+
+
+
+</body>
+</html>

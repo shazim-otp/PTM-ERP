@@ -1,0 +1,116 @@
+body {
+    margin: 0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #172030;
+    background-image: radial-gradient(at 0% 0%, rgba(45, 60, 89, 0.6) 0, transparent 50%), 
+                      radial-gradient(at 100% 0%, rgba(209, 133, 92, 0.15) 0, transparent 50%),
+                      radial-gradient(at 0% 100%, rgba(148, 163, 120, 0.12) 0, transparent 50%),
+                      radial-gradient(at 100% 100%, rgba(45, 60, 89, 0.8) 0, transparent 50%);
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #f8fafc;
+}
+
+/* CONTAINER */
+.login-container {
+    width: 100%;
+    max-width: 400px;
+    padding: 20px;
+}
+
+/* CARD */
+.login-card {
+    background: rgba(45, 60, 89, 0.65);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    text-align: center;
+}
+
+/* TITLE */
+h2 {
+    margin-bottom: 5px;
+    color: #f8fafc;
+    font-weight: 700;
+}
+
+.subtitle {
+    font-size: 13px;
+    color: #cbd5e1;
+    margin-bottom: 20px;
+}
+
+/* INPUT GROUP */
+.input-group {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    outline: none;
+    border-radius: 8px;
+    background: rgba(45, 60, 89, 0.55);
+    color: #ffffff;
+    transition: all 0.2s ease-in-out;
+}
+
+.input-group input:focus {
+    background: #2D3C59;
+    border-color: #D1855C;
+    box-shadow: 0 0 0 4px rgba(209, 133, 92, 0.25);
+}
+
+/* FLOAT LABEL */
+.input-group label {
+    position: absolute;
+    top: 50%;
+    left: 12px;
+    transform: translateY(-50%);
+    font-size: 14px;
+    color: #94a3b8;
+    pointer-events: none;
+    transition: 0.2s;
+}
+
+.input-group input:focus + label,
+.input-group input:valid + label {
+    top: 5px;
+    font-size: 11px;
+    color: #E5BA41;
+    font-weight: 600;
+}
+
+/* BUTTON */
+.login-btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background: #D1855C;
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(209, 133, 92, 0.25);
+    transition: all 0.2s ease;
+}
+
+.login-btn:hover {
+    background: #b46b43;
+    box-shadow: 0 6px 16px rgba(209, 133, 92, 0.4);
+}
+
+/* MOBILE */
+@media (max-width: 500px) {
+    .login-card {
+        padding: 20px;
+    }
+}

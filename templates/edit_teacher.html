@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+{% include 'sidebar.html' %}
+
+<div class="main">
+
+<div class="card">
+
+<h2>Edit Teacher</h2>
+
+<form method="post">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+<input name="name" value="{{teacher[1]}}">
+<input name="subject" value="{{teacher[2]}}">
+<textarea name="details">{{teacher[3]}}</textarea>
+
+<button class="button">Update</button>
+
+</form>
+
+</div>
+
+</div>
+<script>
+    function toggleMenu() {
+document.querySelector(".sidebar").classList.toggle("hide");
+}
+
+</script>
+</body>
+</html>

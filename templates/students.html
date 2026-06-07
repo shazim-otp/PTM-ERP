@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Directory - PTMHSS ERP</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom styling -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        .main {
+            padding: 25px;
+            min-height: 100vh;
+        }
+        .student-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .student-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 15px;
+            backdrop-filter: var(--glass-blur);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .student-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(255, 255, 255, 0.15);
+            background: rgba(45, 60, 89, 0.6);
+        }
+        .avatar-placeholder {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            color: white;
+            font-weight: bold;
+        }
+        .avatar-img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid var(--glass-border);
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar Inclusion -->
+    {% include 'sidebar.html' %}
+
+    <div class="main">
+        <!-- Top Header & Search -->
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+            <div>
+                <h1 class="h2 text-white fw-bold"><i class="fa-solid fa-user-graduate text-primary me-2"></i> Student Directory</h1>
+                <p class="text-muted m-0">Search and filter active or archived students</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="/students/science" class="btn btn-outline-light"><i class="fa-solid fa-flask me-1"></i> Science Menu</a>
+                <a href="/students/commerce" class="btn btn-outline-light"><i class="fa-solid fa-briefcase me-1"></i> Commerce Menu</a>
+            </div>
+        </div>
+
+        <!-- Filter Panel -->
+        <div class="card p-4">
+            <h5 class="text-white mb-3 fw-bold"><i class="fa-solid fa-sliders text-warning me-2"></i> Filter Students</h5>
+            <form action="/students" method="GET" class="row g-3">
+                <div class="col-12 col-md-3">
+                    <label class="form-label small text-muted">Academic Batch</label>
+                    <select name="batch_id" class="form-select bg-dark text-white border-secondary">
+                        <option value="all" {% if selected_batch == 'all' or not selected_batch %}selected{% endif %}>All Batches</option>
+                        {% for b in batches %}
+                        <option value="{{ b.id }}" {% if selected_batch == b.id|string %}selected{% endif %}>{{ b.batch_name }} {% if b.is_active %}(Active){% endif %}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-md-3">
+                    <label class="form-label small text-muted">Stream</label>
+                    <select name="stream" class="form-select bg-dark text-white border-secondary">
+                        <option value="all" {% if selected_stream == 'all' %}selected{% endif %}>All Streams</option>
+                        <option value="science" {% if selected_stream == 'science' %}selected{% endif %}>Science</option>
+                        <option value="commerce" {% if selected_stream == 'commerce' %}selected{% endif %}>Commerce</option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-2">
+                    <label class="form-label small text-muted">Category</label>
+                    <select name="category" class="form-select bg-dark text-white border-secondary">
+                        <option value="all" {% if selected_category == 'all' %}selected{% endif %}>All Categories</option>
+                        <option value="cs" {% if selected_category == 'cs' %}selected{% endif %}>CS (Computer Science)</option>
+                        <option value="bio" {% if selected_category == 'bio' %}selected{% endif %}>Bio (Biology)</option>
+                        <option value="maths" {% if selected_category == 'maths' %}selected{% endif %}>Maths (Mathematics)</option>
+                        <option value="ca" {% if selected_category == 'ca' %}selected{% endif %}>CA (Computer Applications)</option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-2">
+                    <label class="form-label small text-muted">Class</label>
+                    <select name="class" class="form-select bg-dark text-white border-secondary">
+                        <option value="all" {% if selected_class == 'all' %}selected{% endif %}>All Classes</option>
+                        {% for c in classes %}
+                        <option value="{{ c }}" {% if selected_class == c %}selected{% endif %}>{{ c }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-md-2">
+                    <button type="submit" class="btn btn-primary w-100 fw-bold py-2" style="margin-top: 30px;"><i class="fa-solid fa-filter me-1"></i> Apply</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Students Count -->
+        <div class="d-flex justify-content-between align-items-center mt-4">
+            <h5 class="text-white fw-bold m-0"><i class="fa-solid fa-users text-primary me-2"></i> Students List ({{ students|length }})</h5>
+        </div>
+
+        <!-- Student Grid -->
+        <div class="student-grid">
+            {% if students %}
+                {% for s in students %}
+                <div class="student-card" onclick="location.href='/student/{{ s.id }}'">
+                    {% if s.image %}
+                        <img src="{{ url_for('static', filename='uploads/' + s.image) }}" class="avatar-img" alt="{{ s.name }}">
+                    {% else %}
+                        <div class="avatar-placeholder">
+                            {{ s.name[0] | upper }}
+                        </div>
+                    {% endif %}
+                    <div>
+                        <h6 class="text-white fw-bold mb-1">{{ s.name }}</h6>
+                        <div class="small text-muted">{{ s.class or 'N/A' }} | {{ s.stream | capitalize }}</div>
+                        <div class="small text-warning" style="font-size: 0.75rem;">Batch: {{ s.batch_name or 'None' }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-12 text-center py-5 card" style="grid-column: 1 / -1;">
+                    <p class="text-muted m-0"><i class="fa-solid fa-users-slash text-danger fs-3 mb-2 d-block"></i> No students match the filter criteria.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

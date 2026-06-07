@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academic Batches - PTMHSS ERP</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom styling -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        .main {
+            padding: 25px;
+            min-height: 100vh;
+        }
+        .batch-card {
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            background: rgba(45, 60, 89, 0.35);
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        .batch-card:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+        .batch-card.active-border {
+            border-left: 5px solid var(--color-gold) !important;
+            background: rgba(229, 186, 65, 0.08);
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar Inclusion -->
+    {% include 'sidebar.html' %}
+
+    <div class="main">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+            <div>
+                <h1 class="h2 text-white fw-bold"><i class="fa-solid fa-calendar-days text-primary me-2"></i> Academic Batch System</h1>
+                <p class="text-muted m-0">Create, manage, and promotion scope students within academic batches</p>
+            </div>
+            <div>
+                <a href="/admin-panel" class="btn btn-outline-light"><i class="fa-solid fa-arrow-left me-2"></i> Back to Manage</a>
+            </div>
+        </div>
+
+        <!-- Alert messages -->
+        {% if error_msg %}
+        <div class="alert alert-danger bg-danger text-white border-0 mb-4">{{ error_msg }}</div>
+        {% endif %}
+        {% if success_msg %}
+        <div class="alert alert-success bg-success text-white border-0 mb-4">{{ success_msg }}</div>
+        {% endif %}
+
+        <div class="row">
+            <!-- Create/Edit Form Card -->
+            <div class="col-12 col-lg-4">
+                <div class="card p-4">
+                    <h5 class="text-white mb-3 fw-bold" id="formTitle"><i class="fa-solid fa-plus text-success me-2"></i> Create Academic Batch</h5>
+                    <form action="/admin/batches" method="POST" id="batchForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" id="formAction" value="create">
+                        <input type="hidden" name="batch_id" id="formBatchId" value="">
+
+                        <div class="mb-3">
+                            <label class="form-label">Batch Name (Academic Year)</label>
+                            <input type="text" name="batch_name" id="inputBatchName" class="form-control text-white" placeholder="e.g. 2026-27" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Start Year</label>
+                            <input type="number" name="start_year" id="inputStartYear" class="form-control text-white" placeholder="e.g. 2026" required min="2000" max="2100">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">End Year</label>
+                            <input type="number" name="end_year" id="inputEndYear" class="form-control text-white" placeholder="e.g. 2027" required min="2000" max="2100">
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary w-100 fw-bold" id="submitBtn">Create Batch</button>
+                            <button type="button" class="btn btn-secondary w-100 fw-bold d-none" id="cancelEditBtn" onclick="resetForm()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Batches List -->
+            <div class="col-12 col-lg-8">
+                <div class="card p-4">
+                    <h5 class="text-white mb-3 fw-bold"><i class="fa-solid fa-list text-primary me-2"></i> Registered Batches</h5>
+                    
+                    {% if batches %}
+                        {% for b in batches %}
+                        <div class="batch-card {% if b.is_active %}active-border{% endif %}">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                                <div>
+                                    <h4 class="text-white fw-bold m-0 d-flex align-items-center gap-2">
+                                        {{ b.batch_name }}
+                                        {% if b.is_active %}
+                                        <span class="badge bg-warning text-dark small" style="font-size: 0.75rem;">CURRENT ACTIVE</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary text-white small" style="font-size: 0.75rem;">ARCHIVED</span>
+                                        {% endif %}
+                                    </h4>
+                                    <p class="text-muted m-0 mt-1">
+                                        <i class="fa-regular fa-clock me-1"></i> Years: {{ b.start_year }} - {{ b.end_year }} 
+                                        <span class="mx-2">|</span> 
+                                        <i class="fa-solid fa-user-graduate me-1"></i> Students: <strong class="text-white">{{ b.student_count }}</strong>
+                                    </p>
+                                </div>
+                                <div class="d-flex gap-2 mt-3 mt-md-0">
+                                    {% if not b.is_active %}
+                                    <form action="/admin/batches" method="POST" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="action" value="activate">
+                                        <input type="hidden" name="batch_id" value="{{ b.id }}">
+                                        <button type="submit" class="btn btn-sm btn-success"><i class="fa-solid fa-play me-1"></i> Activate</button>
+                                    </form>
+                                    {% else %}
+                                    <form action="/admin/batches" method="POST" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="action" value="archive">
+                                        <input type="hidden" name="batch_id" value="{{ b.id }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-warning"><i class="fa-solid fa-box-archive me-1"></i> Archive</button>
+                                    </form>
+                                    {% endif %}
+
+                                    <button type="button" class="btn btn-sm btn-outline-info" 
+                                            onclick="editBatch({{ b.id }}, '{{ b.batch_name }}', {{ b.start_year }}, {{ b.end_year }})">
+                                        <i class="fa-solid fa-edit"></i> Edit
+                                    </button>
+
+                                    {% if b.student_count == 0 %}
+                                    <form action="/admin/batches" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this batch?');">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="batch_id" value="{{ b.id }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center py-4">No batches created yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function editBatch(id, name, start, end) {
+            document.getElementById("formTitle").innerHTML = '<i class="fa-solid fa-edit text-info me-2"></i> Edit Academic Batch';
+            document.getElementById("formAction").value = 'edit';
+            document.getElementById("formBatchId").value = id;
+            document.getElementById("inputBatchName").value = name;
+            document.getElementById("inputStartYear").value = start;
+            document.getElementById("inputEndYear").value = end;
+            document.getElementById("submitBtn").innerHTML = 'Update Batch';
+            document.getElementById("submitBtn").className = 'btn btn-info w-100 fw-bold';
+            document.getElementById("cancelEditBtn").classList.remove("d-none");
+        }
+
+        function resetForm() {
+            document.getElementById("formTitle").innerHTML = '<i class="fa-solid fa-plus text-success me-2"></i> Create Academic Batch';
+            document.getElementById("formAction").value = 'create';
+            document.getElementById("formBatchId").value = '';
+            document.getElementById("batchForm").reset();
+            document.getElementById("submitBtn").innerHTML = 'Create Batch';
+            document.getElementById("submitBtn").className = 'btn btn-primary w-100 fw-bold';
+            document.getElementById("cancelEditBtn").classList.add("d-none");
+        }
+    </script>
+</body>
+</html>

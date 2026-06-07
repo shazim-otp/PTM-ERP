@@ -1,0 +1,418 @@
+================================================================================
+                    AI-POWERED SCHOOL ERP SYSTEM - SETUP MANUAL
+================================================================================
+
+This document contains a complete, step-by-step, beginner-friendly guide to build, 
+configure, and run the AI-Powered School ERP System. Follow the instructions 
+precisely. Every command is shown exactly as it should be typed.
+
+--------------------------------------------------------------------------------
+1. PROJECT OVERVIEW
+--------------------------------------------------------------------------------
+This project is an advanced AI-Powered School ERP (Enterprise Resource Planning) 
+System built on top of a Flask backend and SQLite database. It provides school 
+administrators and teachers with tools to manage daily educational operations.
+
+MAIN FEATURES:
+* Attendance Management: Daily presence logger, bulk marking sheet, monthly percentage calculator.
+* Examination Management: Exam schedules list, custom term setups.
+* Marks & Grading: Exam grade logs, auto-calculated totals, percentages, class leaderboard rankings.
+* local AI Diagnostics (Ollama): Local LLM prompts to calculate student risk score, academic strengths, weaknesses, and custom teacher-parent suggestions.
+* Meta WhatsApp Notifications: Auto-triggers WhatsApp alerts to parents when student is absent, leave approved, attendance falls low (<75%), or exam results are published.
+* PDF Reports Generation (ReportLab): Interactive dashboard download buttons for print-ready student profile charts, grade logs, and AI summaries.
+* Security Hardening: BCrypt password hashes, Flask-WTF CSRF tokens protection, Werkzeug secure filename uploads, parameterized SQL queries.
+
+FOLDER STRUCTURE EXPLANATION:
+school-ai-main/
+│
+├── app.py                  # Core Flask backend server and routes dispatcher
+├── init_db.py              # SQLite database creation & BCrypt schema migration engine
+├── ai_service.py           # Local Ollama LLM queries & rule-based fallback analyzer
+├── whatsapp_service.py     # Meta WhatsApp Cloud API dispatcher & simulated logs database writer
+├── pdf_generator.py        # ReportLab layouts generator for PDF exports
+├── database.db             # Local SQLite database file (automatically created/migrated)
+├── teachers.json           # Default teacher login list (imported/hashed by migration)
+├── passwords.txt           # File containing default administrator logins summary
+├── requirements.txt        # Third-party Python libraries dependencies manifest
+├── .env                    # System environmental variables (keeps passwords secure)
+│
+├── static/                 # Static web assets
+│   ├── css/                # Style sheets (main.css, login.css)
+│   ├── js/                 # Client side scripts (search.js)
+│   └── uploads/            # Sanitized student image uploads and generated PDFs
+│
+└── templates/              # HTML frontend layouts (Jinja2 templates)
+    ├── sidebar.html        # ERP side navigation panel
+    ├── index.html          # Dashboard landing page (KPI cards, Chart.js displays)
+    ├── login.html          # Secure login portal page
+    ├── student_detail.html # Expanded student log sheet, charts, and PDF download keys
+    ├── attendance.html     # Bulk attendance marking page
+    ├── leaves.html         # Leaves approval panel
+    ├── subjects.html       # Subjects directory CRUD
+    ├── exams.html          # Exam scheduling CRUD
+    ├── marks.html          # Leaderboards ranking list & grade entry card
+    └── notifications.html  # Outbound WhatsApp notifications audit logs
+
+SYSTEM ROLES:
+1. Admin Role: Access to all features. Can add, edit, and delete student profiles, teacher details, subjects, exams, marks, and attendance.
+2. Teacher Role: Access to view student profiles, add student grades, mark daily attendance, add teacher remarks, trigger AI analyses, and check notification logs.
+Note: Parents DO NOT have accounts or login dashboards. They only receive automated alerts on their phones (via WhatsApp/Email).
+
+--------------------------------------------------------------------------------
+2. INSTALLATION
+--------------------------------------------------------------------------------
+
+STEP 1: Install Python (Version 3.8 to 3.12 recommended)
+- Windows: Download the installer from python.org. Ensure you tick the box "Add Python.exe to PATH" during installation.
+- Linux/Ubuntu: Run the command:
+  sudo apt update
+  sudo apt install python3 python3-venv python3-pip -y
+
+STEP 2: Open Terminal / Command Prompt
+- Windows: Press Win+R, type "cmd", and press Enter.
+- Navigate to the project root directory:
+  cd c:\Users\shaza\Documents\school-ai-main
+
+STEP 3: Create a Virtual Environment (venv)
+Run the following command to create a virtual environment named "venv" to isolate dependencies:
+  python -m venv venv
+
+STEP 4: Activate the Virtual Environment
+- Windows Command Prompt:
+  venv\Scripts\activate
+- Windows PowerShell:
+  .\venv\Scripts\Activate.ps1
+- Linux/macOS Terminal:
+  source venv/bin/activate
+
+Once activated, your terminal prompt will be prefixed with "(venv)".
+
+STEP 5: Install Required Python Dependencies
+Run pip to install all needed libraries:
+  pip install -r requirements.txt
+
+--------------------------------------------------------------------------------
+3. DATABASE SETUP
+--------------------------------------------------------------------------------
+The database scheme incorporates student demographics, teacher logins, attendance logs, leave submissions, exams, subjects, grades, and AI reports.
+
+HOW TO INITIALIZE AND RUN MIGRATIONS:
+1. Ensure your virtual environment is activated.
+2. Run the initialization script:
+   python init_db.py
+
+This script will:
+- Check if "database.db" exists, creating it if not.
+- Add "username" and "password_hash" columns to the "teachers" table if they do not exist.
+- Read "teachers.json", generate secure BCrypt hashed passwords, and insert them into the "teachers" table.
+- Create all required tables (attendance, leave_requests, subjects, exams, marks, notifications, ai_reports, teacher_remarks).
+- Populate the database with default subjects (Mathematics, Physics, Chemistry, Biology, Computer Science, English, Commerce).
+
+HOW TO RESET THE DATABASE:
+If you want to clear all data and reset the database:
+1. Delete the "database.db" file:
+   del database.db  (Windows)
+   rm database.db   (Linux/macOS)
+2. Re-run the initialization script:
+   python init_db.py
+
+--------------------------------------------------------------------------------
+4. OLLAMA SETUP (LOCAL AI ENGINE)
+--------------------------------------------------------------------------------
+We use Ollama to run high-performance AI models locally, keeping student diagnostic analyses private and secure.
+
+STEP 1: Download & Install Ollama
+- Go to https://ollama.com and download the version for Windows, macOS, or Linux.
+- Run the installer and launch the Ollama application.
+
+STEP 2: Pull the AI Model
+Open a new Command Prompt / Terminal (without virtual environment is fine) and run:
+  ollama pull gemma3
+
+(Alternatively, you can pull "llama3" or "mistral"):
+  ollama pull llama3
+  ollama pull mistral
+
+STEP 3: Verify the Installation
+Check that the model is loaded in your local Ollama list:
+  ollama list
+
+STEP 4: Run the Model (Optional Test)
+Test the model's command line interface:
+  ollama run gemma3
+(Type a message like "Hello" to test, then type "/exit" to close the prompt).
+
+STEP 5: Connection to Flask
+The Flask application is pre-configured to query Ollama at "http://localhost:11434". If your Ollama is running on a different port, update the "OLLAMA_URL" variable in your ".env" file.
+
+Note: If Ollama is not running, the ERP system automatically switches to an intelligent rule-based fallback system. This generates a simulated markdown report, risk scores, and recommendations so the system never crashes!
+
+--------------------------------------------------------------------------------
+5. WHATSAPP API SETUP
+--------------------------------------------------------------------------------
+To send real WhatsApp alerts to parents, we connect to Meta's WhatsApp Cloud API.
+
+STEP 1: Create a Meta Developer Account
+1. Visit https://developers.facebook.com and register as a developer.
+2. Click "My Apps" -> "Create App".
+3. Select "Other" -> "Business" as app type, then click Next.
+4. Give your app a name and click "Create App".
+
+STEP 2: Add WhatsApp Product to App
+1. Inside your App Dashboard, scroll down and find "WhatsApp". Click "Set up".
+2. Link your Meta Business Account (or let Facebook create a default test account).
+
+STEP 3: Obtain Tokens & Test Phone ID
+1. In the left panel, navigate to "WhatsApp" -> "API Setup".
+2. Under "Temporary access token", copy the token string.
+3. Under "Step 1: Select phone numbers", copy the "Phone number ID".
+
+STEP 4: Configure the ERP Env File
+Add these values directly to your ".env" file in the project folder (see Section 6).
+
+STEP 5: Add Recipient Test Numbers
+If you are using a Meta developer test account, you must register recipient numbers before sending. Under the "To" field dropdown in API Setup page, click "Manage phone number list" and add the parent's phone number.
+
+Note: If you leave the keys in ".env" as default or blank, the system automatically runs the "WhatsApp Simulator". This logs all alerts to the "notifications" table in the database and prints them to the terminal, allowing full testing of the notification workflow without Meta API limits.
+
+--------------------------------------------------------------------------------
+6. ENVIRONMENT VARIABLES (.ENV)
+--------------------------------------------------------------------------------
+Create a file named ".env" inside the root "school-ai-main" directory.
+Open the file in a text editor and copy the following configuration:
+
+SECRET_KEY=98f8b7b2580a13ef639b9776b92f72bc97dc3f8324f6055d
+DATABASE_PATH=database.db
+OLLAMA_URL=http://localhost:11434
+OLLAMA_MODEL=gemma3
+WHATSAPP_TOKEN=your_whatsapp_cloud_api_token_here
+WHATSAPP_PHONE_ID=your_whatsapp_phone_number_id_here
+ADMIN_PASSWORD=Schoolisgood
+
+* Replace "your_whatsapp_cloud_api_token_here" and "your_whatsapp_phone_number_id_here" with your actual Meta details if you want live messages, otherwise leave them as is.
+* "ADMIN_PASSWORD" can be changed to anything you like to secure the "/admin" login portal.
+
+--------------------------------------------------------------------------------
+7. FIRST ADMIN ACCOUNT & CREDENTIALS
+--------------------------------------------------------------------------------
+ADMIN LOGIN PORTAL:
+- Route: http://localhost:5000/admin
+- Username: None (Not required)
+- Default Password: Schoolisgood (loaded from ".env")
+
+TEACHER LOGIN PORTAL:
+- Route: http://localhost:5000/login
+- Default Teacher Accounts:
+  1. Username: arun    Password: 1234
+  2. Username: meera   Password: abcd
+  3. Username: shazim  Password: shazim
+
+HOW TO CHANGE PASSWORD:
+- Admin Password: Edit the "ADMIN_PASSWORD" key in the ".env" file.
+- Teacher Password: Log into the database and update the "password_hash" column in the "teachers" table using BCrypt.
+
+HOW TO CREATE TEACHERS:
+1. Log in as Admin at http://localhost:5000/admin.
+2. Go to "Add Data" (/dashboard) page.
+3. Select "Teacher" from the dropdown.
+4. Input Name, Subject, and Details. Click "Add".
+5. This automatically registers the teacher in the database. The default login credentials will be:
+   - Username: [name_lowercase_without_spaces] (e.g. Name "Arun Raj" becomes username "arunraj")
+   - Password: "1234" (Which they can change or can be updated in DB).
+
+--------------------------------------------------------------------------------
+8. HOW TO RUN THE PROJECT
+--------------------------------------------------------------------------------
+1. Open your Command Prompt / Terminal in the project root directory.
+2. Activate your virtual environment:
+   venv\Scripts\activate  (Windows)
+   source venv/bin/activate  (Linux)
+3. Start the Flask server:
+   python app.py
+4. Open your web browser and go to:
+   http://localhost:5000
+
+--------------------------------------------------------------------------------
+9. HOW TO USE ATTENDANCE
+--------------------------------------------------------------------------------
+1. Navigate to the "Attendance" section from the sidebar.
+2. Under "Bulk Daily Attendance Sheet":
+   - Select the date for which you want to mark attendance.
+   - You can filter the list by class using the "Filter by Class" dropdown.
+   - Select "Present", "Absent", "Late", or "Leave" for each student.
+   - Click "Save Daily Attendance Sheet".
+3. Under the attendance list, students with attendance percentages below 75% are automatically counted and flagged on the analytics cards.
+4. When a student is marked as "Absent", a WhatsApp message is sent to their parents.
+5. If a student's overall attendance falls below 75%, an automated "Low Attendance Alert" warning is sent to their parents.
+6. The "Attendance Log History" table at the bottom of the page logs all entries.
+
+--------------------------------------------------------------------------------
+10. HOW TO USE THE MARKS SYSTEM
+--------------------------------------------------------------------------------
+1. Create Subjects: Navigate to "Subjects" in the sidebar, input name (e.g. Physics) and code (e.g. PHYS101), and click "Create Subject".
+2. Create Exams: Navigate to "Exams" in the sidebar, input name (e.g. Mid Term) and max marks, select the exam date, and click "Schedule Exam".
+3. Record Grades: Navigate to "Marks" in the sidebar. Select a student, exam term, subject, input the marks obtained, and click "Save Grade Marks".
+4. When you save a grade, a WhatsApp notification is sent to parents showing the exam result and subject mark.
+5. Leaderboard Rankings: The "Student Performance Leaderboard" automatically calculates each student's overall marks total, average percentage, and alphabetical grade (A+, A, B+, B, etc.), ranking them from highest to lowest. You can filter this leaderboard by exam term.
+
+--------------------------------------------------------------------------------
+11. HOW TO USE AI FEATURES
+--------------------------------------------------------------------------------
+1. Go to "Students" in the sidebar and click on any student to view their profile.
+2. Scroll to the "AI Student Monitoring & Diagnostics" card.
+3. Click "Generate AI Diagnostic Report" (or click "Run AI Analysis" at the top right of the page).
+4. The backend will compile the student's marks, attendance history, leave request count, and teacher remarks, and feed them to the local Ollama LLM.
+5. Within a few seconds, the LLM will generate a diagnostic report card containing:
+   - Overall Academic score & Risk score (0-100%).
+   - Risk Category (Low, Medium, High, Critical).
+   - Weak Subjects & Strength Areas.
+   - Specific, actionable recommendations.
+6. If the generated AI report classifies the student as "High" or "Critical" risk, an academic WhatsApp alert is sent to parents asking them to contact the class teacher.
+
+--------------------------------------------------------------------------------
+12. HOW TO USE WHATSAPP FEATURES
+--------------------------------------------------------------------------------
+1. Configure credentials: Set "WHATSAPP_TOKEN" and "WHATSAPP_PHONE_ID" in the ".env" file.
+2. If credentials are set, alerts are sent to parents on 5 events:
+   - Student marked Absent.
+   - Student Leave request Approved.
+   - Overall student attendance falls below 75%.
+   - Student Exam marks are saved.
+   - Student AI risk score indicates High or Critical risk.
+3. Inspect notification status: Navigate to the "Notifications" section in the sidebar. This page lists every outbound WhatsApp message with its timestamp, recipient student name, message body, and delivery status ("Sent", "Simulated", or "Failed"). You can filter this log by status or category.
+
+--------------------------------------------------------------------------------
+13. DEPLOYMENT GUIDE
+--------------------------------------------------------------------------------
+
+LOCAL WINDOWS DEPLOYMENT (DEVELOPMENT & INTRA-NET):
+To allow other computers on the same school Wi-Fi network to access the ERP:
+1. Open your command prompt, run "ipconfig", and find your IPv4 Address (e.g. 192.168.1.50).
+2. Start the app on host 0.0.0.0:
+   python app.py
+3. Other users on the same network can access the portal via their web browsers by entering:
+   http://192.168.1.50:5000
+
+UBUNTU SERVER DEPLOYMENT (PRODUCTION WEBSERVER):
+To deploy this system to a cloud server (DigitalOcean, AWS, Linode) using Gunicorn and Nginx:
+
+1. Update packages and install dependencies:
+   sudo apt update
+   sudo apt install python3-pip python3-venv nginx sqlite3 -y
+
+2. Clone/Upload your project directory to "/var/www/school-erp".
+   sudo mkdir -p /var/www/school-erp
+   sudo chown -R $USER:$USER /var/www/school-erp
+   # Copy all project files here
+
+3. Create virtual environment and install requirements:
+   cd /var/www/school-erp
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   pip install gunicorn
+
+4. Run the database migration script:
+   python init_db.py
+
+5. Create Gunicorn Systemd Service:
+   Create a service file using your text editor:
+   sudo nano /etc/systemd/system/school-erp.service
+
+   Add the following content:
+   [Unit]
+   Description=Gunicorn instance to serve School ERP
+   After=network.target
+
+   [Service]
+   User=www-data
+   Group=www-data
+   WorkingDirectory=/var/www/school-erp
+   Environment="PATH=/var/www/school-erp/venv/bin"
+   ExecStart=/var/www/school-erp/venv/bin/gunicorn --workers 3 --bind 127.0.0.1:5000 app:app
+
+   [Install]
+   WantedBy=multi-user.target
+
+6. Start and enable Gunicorn:
+   sudo systemctl start school-erp
+   sudo systemctl enable school-erp
+
+7. Configure Nginx Reverse Proxy:
+   Create Nginx server configuration:
+   sudo nano /etc/nginx/sites-available/school-erp
+
+   Add the following content (replace "your_domain.com" with server IP or domain):
+   server {
+       listen 80;
+       server_name your_domain.com;
+
+       location / {
+           proxy_pass http://127.0.0.1:5000;
+           proxy_set_header Host $host;
+           proxy_set_header X-Real-IP $remote_addr;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+           proxy_set_header X-Forwarded-Proto $scheme;
+       }
+
+       location /static/ {
+           alias /var/www/school-erp/static/;
+       }
+   }
+
+8. Enable Nginx site and reload services:
+   sudo ln -s /etc/nginx/sites-available/school-erp /etc/nginx/sites-enabled/
+   sudo nginx -t
+   sudo systemctl restart nginx
+   sudo systemctl restart school-erp
+
+--------------------------------------------------------------------------------
+14. BACKUP GUIDE
+--------------------------------------------------------------------------------
+DATABASE BACKUP:
+Since the system runs on SQLite, backing up the database is extremely easy. The entire database is contained in the single file "database.db".
+To create a backup copy:
+- Windows Command Prompt:
+  copy database.db database_backup.db
+- Linux / macOS:
+  cp database.db database_backup.db
+
+RESTORE DATABASE:
+To restore the database from a backup copy:
+- Windows Command Prompt:
+  copy database_backup.db database.db
+- Linux / macOS:
+  cp database_backup.db database.db
+
+EXPORT REPORTS:
+Student profiles, attendance logs, exam schedules, and AI analysis reports can be exported as PDFs directly from the student's profile page. 
+Navigate to the student's profile page, click the "Export PDF" dropdown, and select the report to download. PDFs are generated dynamically and saved to the "static/uploads" folder before downloading.
+
+--------------------------------------------------------------------------------
+15. TROUBLESHOOTING
+--------------------------------------------------------------------------------
+COMMON ISSUES AND SOLUTIONS:
+
+1. DATABASE ERROR (e.g. "OperationalError: no such table"):
+   - Cause: The SQLite database file was not initialized correctly or was corrupted.
+   - Fix: Delete "database.db" and run "python init_db.py" to recreate all tables.
+
+2. OLLAMA CONNECTION ERROR (e.g. "requests.exceptions.ConnectionError"):
+   - Cause: Ollama is not running on your computer, or you did not pull the correct model.
+   - Fix: Ensure the Ollama app is open in your system tray. Run "ollama list" in terminal to verify "gemma3" is listed. If the model name is different, change the "OLLAMA_MODEL" key in your ".env" file.
+
+3. WHATSAPP API ERROR (e.g. messages not received by parents):
+   - Cause: Invalid Meta access token, incorrect phone number ID, or recipient number is not registered in developer test lists.
+   - Fix: Check ".env" configurations. If using developer mode, make sure the recipient phone number was added to your allowed Meta sandbox list. Check the "Notifications" tab in the ERP to view Meta's specific error logs.
+
+4. LOGIN PROBLEMS:
+   - Cause: Inputting credentials that don't match the dynamic BCrypt hashes.
+   - Fix: Run "python init_db.py" to overwrite and sync teacher account passwords back to default credentials (defined in section 7).
+
+5. MISSING DEPENDENCY ERRORS (e.g. "ModuleNotFoundError: No module named 'reportlab'"):
+   - Cause: You started the app without activating the virtual environment, or pip failed to install requirements.
+   - Fix: Activate venv using "venv\Scripts\activate" (Windows) or "source venv/bin/activate" (Linux), then run "pip install -r requirements.txt".
+
+================================================================================
+                                 END OF MANUAL
+================================================================================

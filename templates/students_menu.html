@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+{% include 'header.html' %}
+<form method="post">
+1) Science<br>
+2) Commerce<br><br>
+Enter: <input name="choice">
+</form>
+
+<a href="/">Back</a>
+<script>function toggleMenu() {
+    document.querySelector(".sidebar").classList.toggle("hide");
+    }
+    </script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+flask
+flask-wtf
+bcrypt
+python-dotenv
+reportlab
+requests
+apscheduler
