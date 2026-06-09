@@ -212,13 +212,15 @@ def generate_student_report_pdf(student_id, filepath, include_ai=True, include_a
     adm_type = (data['student'].get('admission_type') or 'N/A').capitalize()
     caste_cat = (data['student'].get('caste_category') or 'N/A').upper()
     adhar = data['student'].get('adhar_no') or 'N/A'
+    dob = data['student'].get('dob') or 'N/A'
     
     bank_acc = data['student'].get('bank_acc_no') or 'N/A'
     ifsc = data['student'].get('ifsc_code') or 'N/A'
     bank_details = f"{bank_acc} (IFSC: {ifsc})" if bank_acc != 'N/A' else 'N/A'
     
     co_curr = data['student'].get('co_curricular') or 'N/A'
-    nss_etc = data['student'].get('nss_scouts_jrc_lk') or 'N/A'
+    nss_val = data['student'].get('nss_scouts_jrc_lk') or 'N/A'
+    nss_etc = nss_val.replace('_', ' ').upper() if nss_val != 'N/A' else 'N/A'
     state_part = data['student'].get('state_level_participation') or 'N/A'
     
     cls_val = data['student'].get('class') or 'N/A'
@@ -237,8 +239,11 @@ def generate_student_report_pdf(student_id, filepath, include_ai=True, include_a
         [Paragraph("<b>Admission No:</b>", sty["body"]), Paragraph(str(adm_no), sty["cell"]),
          Paragraph("<b>Admission Type:</b>", sty["body"]), Paragraph(adm_type, sty["cell"])],
          
-        [Paragraph("<b>Aadhaar Number:</b>", sty["body"]), Paragraph(str(adhar), sty["cell"]),
-         Paragraph("<b>Caste Category:</b>", sty["body"]), Paragraph(caste_cat, sty["cell"])],
+        [Paragraph("<b>Date of Birth:</b>", sty["body"]), Paragraph(str(dob), sty["cell"]),
+         Paragraph("<b>Aadhaar Number:</b>", sty["body"]), Paragraph(str(adhar), sty["cell"])],
+         
+        [Paragraph("<b>Caste Category:</b>", sty["body"]), Paragraph(caste_cat, sty["cell"]),
+         Paragraph("", sty["body"]), Paragraph("", sty["cell"])],
          
         [Paragraph("<b>Father's Name:</b>", sty["body"]), Paragraph(father, sty["cell"]),
          Paragraph("<b>Mother's Name:</b>", sty["body"]), Paragraph(mother, sty["cell"])],
@@ -249,7 +254,7 @@ def generate_student_report_pdf(student_id, filepath, include_ai=True, include_a
         [Paragraph("<b>Bank A/C Details:</b>", sty["body"]), Paragraph(bank_details, sty["cell"]),
          Paragraph("<b>Co-Curricular:</b>", sty["body"]), Paragraph(co_curr, sty["cell"])],
          
-        [Paragraph("<b>NSS/Scouts/JRC/LK:</b>", sty["body"]), Paragraph(nss_etc, sty["cell"]),
+        [Paragraph("<b>NSS/Scouts/Guides/JRC/LK:</b>", sty["body"]), Paragraph(nss_etc, sty["cell"]),
          Paragraph("<b>State Level Part.:</b>", sty["body"]), Paragraph(state_part, sty["cell"])]
     ]
     

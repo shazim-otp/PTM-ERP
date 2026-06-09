@@ -32,7 +32,8 @@ def init_database():
         admission_type TEXT,
         caste_category TEXT,
         co_curricular TEXT,
-        nss_scouts_jrc_lk TEXT
+        nss_scouts_jrc_lk TEXT,
+        dob TEXT
     )
     """)
 
@@ -71,7 +72,8 @@ def init_database():
         "admission_type": "TEXT",
         "caste_category": "TEXT",
         "co_curricular": "TEXT",
-        "nss_scouts_jrc_lk": "TEXT"
+        "nss_scouts_jrc_lk": "TEXT",
+        "dob": "TEXT"
     }
     for col_name, col_type in new_student_cols.items():
         if col_name not in student_columns:

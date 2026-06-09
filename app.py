@@ -594,7 +594,7 @@ def edit_student(id):
                 register_no=?, class=?,
                 adhar_no=?, admission_no=?, bank_acc_no=?, ifsc_code=?,
                 state_level_participation=?, admission_type=?, caste_category=?,
-                co_curricular=?, nss_scouts_jrc_lk=?, batch_id=?
+                co_curricular=?, nss_scouts_jrc_lk=?, batch_id=?, dob=?
             WHERE id=?
         """, (
             request.form["name"],
@@ -618,6 +618,7 @@ def edit_student(id):
             request.form.get("co_curricular", ""),
             request.form.get("nss_scouts_jrc_lk", ""),
             request.form.get("batch_id"),
+            request.form.get("dob"),
             id
         ))
         
@@ -708,8 +709,8 @@ def dashboard():
              register_no, class, image,
              adhar_no, admission_no, bank_acc_no, ifsc_code,
              state_level_participation, admission_type, caste_category,
-             co_curricular, nss_scouts_jrc_lk, batch_id)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+             co_curricular, nss_scouts_jrc_lk, batch_id, dob)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """, (
                 request.form["name"],
                 request.form["stream"],
@@ -732,7 +733,8 @@ def dashboard():
                 request.form.get("caste_category", ""),
                 request.form.get("co_curricular", ""),
                 request.form.get("nss_scouts_jrc_lk", ""),
-                batch_id
+                batch_id,
+                request.form.get("dob")
             ))
 
         db.commit()
@@ -788,24 +790,51 @@ def delete_remark(remark_id):
 @app.route("/attendance", methods=["GET"])
 def attendance_view():
     db = get_db()
-    students_list = db.execute("SELECT * FROM students ORDER BY name ASC").fetchall()
+    active_batch = db.execute("SELECT id FROM batches WHERE is_active=1").fetchone()
+    active_batch_id = active_batch['id'] if active_batch else None
+
+    if active_batch_id:
+        students_list = db.execute("SELECT * FROM students WHERE batch_id=? ORDER BY name ASC", (active_batch_id,)).fetchall()
+    else:
+        students_list = db.execute("SELECT * FROM students ORDER BY name ASC").fetchall()
+        
     classes = sorted(list(set([s["class"] for s in students_list if s["class"]])))
 
-    history = db.execute("""
-        SELECT a.*, s.name as student_name 
-        FROM attendance a
-        JOIN students s ON a.student_id = s.id
-        ORDER BY a.attendance_date DESC, s.name ASC
-        LIMIT 100
-    """).fetchall()
+    if active_batch_id:
+        history = db.execute("""
+            SELECT a.*, s.name as student_name 
+            FROM attendance a
+            JOIN students s ON a.student_id = s.id
+            WHERE s.batch_id = ?
+            ORDER BY a.attendance_date DESC, s.name ASC
+            LIMIT 100
+        """, (active_batch_id,)).fetchall()
+    else:
+        history = db.execute("""
+            SELECT a.*, s.name as student_name 
+            FROM attendance a
+            JOIN students s ON a.student_id = s.id
+            ORDER BY a.attendance_date DESC, s.name ASC
+            LIMIT 100
+        """).fetchall()
 
     # Warning calculations
-    percentages = db.execute("""
-        SELECT student_id,
-               (SUM(case status when 'Present' then 1.0 when 'Late' then 0.5 when 'Leave' then 1.0 else 0.0 end) / COUNT(*)) * 100 as pct
-        FROM attendance
-        GROUP BY student_id
-    """).fetchall()
+    if active_batch_id:
+        percentages = db.execute("""
+            SELECT student_id,
+                   (SUM(case status when 'Present' then 1.0 when 'Late' then 0.5 when 'Leave' then 1.0 else 0.0 end) / COUNT(*)) * 100 as pct
+            FROM attendance a
+            JOIN students s ON a.student_id = s.id
+            WHERE s.batch_id = ?
+            GROUP BY student_id
+        """, (active_batch_id,)).fetchall()
+    else:
+        percentages = db.execute("""
+            SELECT student_id,
+                   (SUM(case status when 'Present' then 1.0 when 'Late' then 0.5 when 'Leave' then 1.0 else 0.0 end) / COUNT(*)) * 100 as pct
+            FROM attendance
+            GROUP BY student_id
+        """).fetchall()
     
     critical_count = sum(1 for p in percentages if p["pct"] < 60)
     danger_count = sum(1 for p in percentages if p["pct"] < 75)
@@ -885,26 +914,70 @@ def attendance_delete(id):
 @app.route("/leaves", methods=["GET"])
 def leaves_view():
     db = get_db()
-    students_list = db.execute("SELECT id, name, register_no FROM students ORDER BY name ASC").fetchall()
-    
-    pending_requests = db.execute("""
-        SELECT l.*, s.name as student_name 
-        FROM leave_requests l
-        JOIN students s ON l.student_id = s.id
-        WHERE l.approved = 0
-        ORDER BY l.leave_date ASC
-    """).fetchall()
+    active_batch = db.execute("SELECT id FROM batches WHERE is_active=1").fetchone()
+    active_batch_id = active_batch['id'] if active_batch else None
 
-    history = db.execute("""
-        SELECT l.*, s.name as student_name 
-        FROM leave_requests l
-        JOIN students s ON l.student_id = s.id
-        ORDER BY l.created_at DESC
-    """).fetchall()
+    if active_batch_id:
+        students_list = db.execute("SELECT id, name, register_no FROM students WHERE batch_id=? ORDER BY name ASC", (active_batch_id,)).fetchall()
+    else:
+        students_list = db.execute("SELECT id, name, register_no FROM students ORDER BY name ASC").fetchall()
     
-    total_count = db.execute("SELECT COUNT(*) FROM leave_requests").fetchone()[0]
-    approved_count = db.execute("SELECT COUNT(*) FROM leave_requests WHERE approved = 1").fetchone()[0]
-    pending_count = db.execute("SELECT COUNT(*) FROM leave_requests WHERE approved = 0").fetchone()[0]
+    if active_batch_id:
+        pending_requests = db.execute("""
+            SELECT l.*, s.name as student_name 
+            FROM leave_requests l
+            JOIN students s ON l.student_id = s.id
+            WHERE l.approved = 0 AND s.batch_id = ?
+            ORDER BY l.leave_date ASC
+        """, (active_batch_id,)).fetchall()
+
+        history = db.execute("""
+            SELECT l.*, s.name as student_name 
+            FROM leave_requests l
+            JOIN students s ON l.student_id = s.id
+            WHERE s.batch_id = ?
+            ORDER BY l.created_at DESC
+        """, (active_batch_id,)).fetchall()
+        
+        total_count = db.execute("""
+            SELECT COUNT(l.id) 
+            FROM leave_requests l
+            JOIN students s ON l.student_id = s.id
+            WHERE s.batch_id = ?
+        """, (active_batch_id,)).fetchone()[0]
+        
+        approved_count = db.execute("""
+            SELECT COUNT(l.id) 
+            FROM leave_requests l
+            JOIN students s ON l.student_id = s.id
+            WHERE l.approved = 1 AND s.batch_id = ?
+        """, (active_batch_id,)).fetchone()[0]
+        
+        pending_count = db.execute("""
+            SELECT COUNT(l.id) 
+            FROM leave_requests l
+            JOIN students s ON l.student_id = s.id
+            WHERE l.approved = 0 AND s.batch_id = ?
+        """, (active_batch_id,)).fetchone()[0]
+    else:
+        pending_requests = db.execute("""
+            SELECT l.*, s.name as student_name 
+            FROM leave_requests l
+            JOIN students s ON l.student_id = s.id
+            WHERE l.approved = 0
+            ORDER BY l.leave_date ASC
+        """).fetchall()
+
+        history = db.execute("""
+            SELECT l.*, s.name as student_name 
+            FROM leave_requests l
+            JOIN students s ON l.student_id = s.id
+            ORDER BY l.created_at DESC
+        """).fetchall()
+        
+        total_count = db.execute("SELECT COUNT(*) FROM leave_requests").fetchone()[0]
+        approved_count = db.execute("SELECT COUNT(*) FROM leave_requests WHERE approved = 1").fetchone()[0]
+        pending_count = db.execute("SELECT COUNT(*) FROM leave_requests WHERE approved = 0").fetchone()[0]
     
     db.close()
     return render_template(
@@ -1054,33 +1127,65 @@ def exams_delete(id):
 @app.route("/marks", methods=["GET"])
 def marks_view():
     db = get_db()
-    students_list = db.execute("SELECT id, name, register_no, stream, class FROM students ORDER BY name ASC").fetchall()
+    active_batch = db.execute("SELECT id FROM batches WHERE is_active=1").fetchone()
+    active_batch_id = active_batch['id'] if active_batch else None
+
+    if active_batch_id:
+        students_list = db.execute("SELECT id, name, register_no, stream, class FROM students WHERE batch_id=? ORDER BY name ASC", (active_batch_id,)).fetchall()
+    else:
+        students_list = db.execute("SELECT id, name, register_no, stream, class FROM students ORDER BY name ASC").fetchall()
+        
     subjects_list = db.execute("SELECT * FROM subjects ORDER BY subject_name ASC").fetchall()
     exams_list = db.execute("SELECT * FROM exams ORDER BY exam_date DESC").fetchall()
     
     classes = sorted(list(set([s["class"] for s in students_list if s["class"]])))
     
     # Ranks leaderboard calculating average percentage and grade
-    rankings_rows = db.execute("""
-        SELECT m.student_id, s.name as student_name, s.class, s.stream, e.exam_name,
-               SUM(m.marks_obtained) as total_obtained, SUM(m.max_marks) as total_max,
-               (SUM(m.marks_obtained) / SUM(m.max_marks)) * 100 as avg_percentage
-        FROM marks m
-        JOIN students s ON m.student_id = s.id
-        JOIN exams e ON m.exam_id = e.id
-        GROUP BY m.student_id, m.exam_id
-        ORDER BY avg_percentage DESC
-    """).fetchall()
+    if active_batch_id:
+        rankings_rows = db.execute("""
+            SELECT m.student_id, s.name as student_name, s.class, s.stream, e.exam_name,
+                   SUM(m.marks_obtained) as total_obtained, SUM(m.max_marks) as total_max,
+                   (SUM(m.marks_obtained) / SUM(m.max_marks)) * 100 as avg_percentage
+            FROM marks m
+            JOIN students s ON m.student_id = s.id
+            JOIN exams e ON m.exam_id = e.id
+            WHERE s.batch_id = ?
+            GROUP BY m.student_id, m.exam_id
+            ORDER BY avg_percentage DESC
+        """, (active_batch_id,)).fetchall()
+    else:
+        rankings_rows = db.execute("""
+            SELECT m.student_id, s.name as student_name, s.class, s.stream, e.exam_name,
+                   SUM(m.marks_obtained) as total_obtained, SUM(m.max_marks) as total_max,
+                   (SUM(m.marks_obtained) / SUM(m.max_marks)) * 100 as avg_percentage
+            FROM marks m
+            JOIN students s ON m.student_id = s.id
+            JOIN exams e ON m.exam_id = e.id
+            GROUP BY m.student_id, m.exam_id
+            ORDER BY avg_percentage DESC
+        """).fetchall()
 
-    history = db.execute("""
-        SELECT m.*, s.name as student_name, sub.subject_name, e.exam_name 
-        FROM marks m
-        JOIN students s ON m.student_id = s.id
-        JOIN subjects sub ON m.subject_id = sub.id
-        JOIN exams e ON m.exam_id = e.id
-        ORDER BY m.created_at DESC
-        LIMIT 100
-    """).fetchall()
+    if active_batch_id:
+        history = db.execute("""
+            SELECT m.*, s.name as student_name, sub.subject_name, e.exam_name 
+            FROM marks m
+            JOIN students s ON m.student_id = s.id
+            JOIN subjects sub ON m.subject_id = sub.id
+            JOIN exams e ON m.exam_id = e.id
+            WHERE s.batch_id = ?
+            ORDER BY m.created_at DESC
+            LIMIT 100
+        """, (active_batch_id,)).fetchall()
+    else:
+        history = db.execute("""
+            SELECT m.*, s.name as student_name, sub.subject_name, e.exam_name 
+            FROM marks m
+            JOIN students s ON m.student_id = s.id
+            JOIN subjects sub ON m.subject_id = sub.id
+            JOIN exams e ON m.exam_id = e.id
+            ORDER BY m.created_at DESC
+            LIMIT 100
+        """).fetchall()
 
     db.close()
     return render_template(
@@ -1281,36 +1386,44 @@ def admin_batches():
         action = request.form.get("action")
         
         if action == "create":
-            name = request.form["batch_name"]
-            start = int(request.form["start_year"])
-            end = int(request.form["end_year"])
+            name = request.form.get("batch_name", "").strip()
+            try:
+                start = int(request.form.get("start_year", 0))
+                end = int(request.form.get("end_year", 0))
+            except ValueError:
+                error_msg = "Start year and End year must be valid numbers."
             
-            existing = db.execute("SELECT id FROM batches WHERE batch_name=?", (name,)).fetchone()
-            if existing:
-                error_msg = f"A batch with name '{name}' already exists."
-            else:
-                db.execute("""
-                    INSERT INTO batches (batch_name, start_year, end_year, is_active)
-                    VALUES (?, ?, ?, 0)
-                """, (name, start, end))
-                db.commit()
-                success_msg = f"Batch '{name}' created successfully."
+            if not error_msg:
+                existing = db.execute("SELECT id FROM batches WHERE batch_name=?", (name,)).fetchone()
+                if existing:
+                    error_msg = f"A batch with name '{name}' already exists."
+                else:
+                    db.execute("""
+                        INSERT INTO batches (batch_name, start_year, end_year, is_active)
+                        VALUES (?, ?, ?, 0)
+                    """, (name, start, end))
+                    db.commit()
+                    success_msg = f"Batch '{name}' created successfully."
                 
         elif action == "edit":
-            batch_id = int(request.form["batch_id"])
-            name = request.form["batch_name"]
-            start = int(request.form["start_year"])
-            end = int(request.form["end_year"])
+            try:
+                batch_id = int(request.form.get("batch_id", 0))
+                name = request.form.get("batch_name", "").strip()
+                start = int(request.form.get("start_year", 0))
+                end = int(request.form.get("end_year", 0))
+            except ValueError:
+                error_msg = "Invalid inputs provided."
             
-            existing = db.execute("SELECT id FROM batches WHERE batch_name=? AND id!=?", (name, batch_id)).fetchone()
-            if existing:
-                error_msg = f"Another batch with name '{name}' already exists."
-            else:
-                db.execute("""
-                    UPDATE batches SET batch_name=?, start_year=?, end_year=? WHERE id=?
-                """, (name, start, end, batch_id))
-                db.commit()
-                success_msg = f"Batch updated successfully."
+            if not error_msg:
+                existing = db.execute("SELECT id FROM batches WHERE batch_name=? AND id!=?", (name, batch_id)).fetchone()
+                if existing:
+                    error_msg = f"Another batch with name '{name}' already exists."
+                else:
+                    db.execute("""
+                        UPDATE batches SET batch_name=?, start_year=?, end_year=? WHERE id=?
+                    """, (name, start, end, batch_id))
+                    db.commit()
+                    success_msg = f"Batch updated successfully."
                 
         elif action == "delete":
             batch_id = int(request.form["batch_id"])
@@ -1361,10 +1474,13 @@ def admin_promotion():
     
     students_list = []
     if current_class and current_batch:
-        students_list = db.execute(
-            "SELECT * FROM students WHERE class=? AND batch_id=? ORDER BY name ASC",
-            (current_class, int(current_batch))
-        ).fetchall()
+        try:
+            students_list = db.execute(
+                "SELECT * FROM students WHERE class=? AND batch_id=? ORDER BY name ASC",
+                (current_class, int(current_batch))
+            ).fetchall()
+        except ValueError:
+            pass
         
     classes_rows = db.execute("SELECT DISTINCT class FROM students WHERE class IS NOT NULL AND class != ''").fetchall()
     classes = [c["class"] for c in classes_rows]
